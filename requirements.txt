@@ -1,1 +1,3 @@
 llama-index
+llama_index.llms.ollama
+llama_index.embeddings.huggingface
