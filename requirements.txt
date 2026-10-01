@@ -2,3 +2,8 @@ llama-index
 llama_index.llms.ollama
 llama_index.embeddings.huggingface
 streamlit
+# SimpleDirectoryReader của LlamaIndex hỗ trợ nhiều loại file thông qua các file reader tương ứng.
+# Với PDF, project sử dụng PyMuPDFReader, vì vậy cần cài llama-index-readers-file và pymupdf để trích xuất nội dung PDF thành text trước khi đưa vào pipeline RAG.
+llama-index-readers-file 
+pymupdf
+python-docx 

@@ -1,6 +1,7 @@
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.readers.file import PyMuPDFReader
 
 
 # =========================
@@ -8,7 +9,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 # =========================
 
 Settings.llm = Ollama(
-    model="qwen2.5:3b",
+    model="qwen2.5:0.5b",
     request_timeout=120.0,
 )
 
@@ -18,9 +19,12 @@ Settings.llm = Ollama(
 # =========================
 
 Settings.embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-m3"
+    model_name="AITeamVN/Vietnamese_Embedding"
 )
 
+# Settings.embed_model = HuggingFaceEmbedding(
+#     model_name="dangvantuan/vietnamese-embedding"
+# )
 
 # =========================
 # 3. Đọc PDF
