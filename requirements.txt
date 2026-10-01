@@ -8,3 +8,6 @@ streamlit
 llama-index-readers-file 
 pymupdf
 python-docx 
+
+llama-index-retrievers-bm25
+
