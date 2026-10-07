@@ -1,3 +1,4 @@
+import nltk
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.extractors import (
@@ -8,10 +9,14 @@ from llama_index.core.extractors import (
 )
 from llama_index.extractors.entity import EntityExtractor
 
-from ingestion.Embedded import get_embedded_model
-from ingestion.Parse import create_Parse
+from src.ingestion.Embedded import get_embedded_model
+from src.ingestion.Parse import create_Parse
 
 def get_processed_nodes():
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+    except LookupError:
+        nltk.download('punkt_tab', quiet=True)
     embed_model = get_embedded_model()
     documents = create_Parse()
     pipeline = IngestionPipeline(

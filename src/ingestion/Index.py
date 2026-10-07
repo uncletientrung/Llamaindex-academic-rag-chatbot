@@ -5,9 +5,8 @@ from llama_index.core import (
     KeywordTableIndex,
     PropertyGraphIndex
 )
-from ingestion.IngestionPipeline import get_processed_nodes
-from ingestion.StorageContext import get_Storage_context
-
+from src.ingestion.IngestionPipeline import get_processed_nodes
+from src.ingestion.StorageContext import get_Storage_context
 
 def create_all_indexes():
     nodes = get_processed_nodes()
