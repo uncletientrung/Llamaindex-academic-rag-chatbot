@@ -1,0 +1,1 @@
+Công nghệ RAG giúp LLM trả lời chính xác hơn dựa trên tài liệu được cung cấp
