@@ -10,7 +10,7 @@ from llama_index.core.extractors import (
 from llama_index.extractors.entity import EntityExtractor
 
 from src.ingestion.Embedded import get_embedded_model
-from src.ingestion.Parse import create_Parse
+from src.ingestion.Loader import create_load
 
 def get_processed_nodes():
     try:
@@ -18,7 +18,7 @@ def get_processed_nodes():
     except LookupError:
         nltk.download('punkt_tab', quiet=True)
     embed_model = get_embedded_model()
-    documents = create_Parse()
+    documents = create_load()
     pipeline = IngestionPipeline(
         transformations=[
             SentenceSplitter(chunk_size=512, chunk_overlap=10),
