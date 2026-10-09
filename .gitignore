@@ -1,4 +1,5 @@
 # Virtual environment
+venv/
 .venv/
 
 # Python cache
@@ -11,5 +12,10 @@ __pycache__/
 # VS Code settings
 .vscode/
 
-# Documents 
+# Documents
 data/
+
+# Local chat history database
+chat_history.db
+chat_history.db-shm
+chat_history.db-wal

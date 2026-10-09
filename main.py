@@ -18,7 +18,7 @@ from src.retrieval.retriever import create_retriever
 # =========================
 
 Settings.llm = Ollama(
-    model="qwen2.5:0.5b",
+    model="qwen2.5:3b",
     request_timeout=120.0,
 )
 
