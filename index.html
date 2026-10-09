@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG PDF Expert</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar Trái -->
+        <aside class="sidebar-left">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>RAG PDF Expert</span>
+            </div>
+
+            <div class="section">
+                <h3><i class="fas fa-list-ol"></i> Hướng dẫn sử dụng</h3>
+                <ol class="instructions">
+                    <li><span class="step">1</span> Upload PDF</li>
+                    <li><span class="step">2</span> Wait for processing</li>
+                    <li><span class="step">3</span> Enter question</li>
+                    <li><span class="step">4</span> Click Ask</li>
+                </ol>
+            </div>
+
+            <div class="section">
+                <h3><i class="fas fa-cog"></i> Thông số cài đặt</h3>
+                <div class="settings">
+                    <div class="setting-item">
+                        <span>Chunk Size</span>
+                        <input type="number" id="chunkSize" value="1000">
+                    </div>
+
+                    <div class="setting-item">
+                        <span>Chunk Overlap</span>
+                        <input type="number" id="chunkOverlap" value="200">
+                    </div>
+
+                    <div class="setting-item">
+                        <span>Top K</span>
+                        <input type="number" id="topK" value="3">
+                    </div>
+
+                    <div class="setting-item">
+                        <span>Fetch K</span>
+                        <input type="number" id="fetchK" value="20">
+                    </div>
+
+                    <div class="setting-item">
+                        <span>Temperature</span>
+                        <input type="number" step="0.1" id="temperature" value="0.7">
+                    </div>
+                </div>
+                <div class="settings-actions" id="settings-actions">
+                    <button id="editSettingsBtn" class="btn-edit">Chỉnh sửa</button>
+                    <button id="saveSettingsBtn" class="btn-save" style="display:none;">Lưu</button>
+                    <button id="cancelSettingsBtn" class="btn-cancel-setting" style="display:none;">Đóng</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3><i class="fas fa-microchip"></i> Model Configuration</h3>
+                <div class="model-config">
+                    <div class="config-item"><span>LLM</span><strong>qwen2.5:3b</strong></div>
+                    <div class="config-item"><span>Embedding</span><strong>mpnet-base-v2</strong></div>
+                    <div class="config-item"><span>Vector DB</span><strong>FAISS</strong></div>
+                    <div class="config-item"><span>Framework</span><strong>LangChain</strong></div>
+                </div>
+            </div>
+
+            <div class="version">v1.2.4 • Stable Build</div>
+        </aside>
+
+        <!-- Nội dung chính -->
+        <main class="main-content">
+            <header class="header">
+                <h1>Hỏi Đáp Tài Liệu PDF (RAG)</h1>
+                <button id="changeDocumentBtn" class="btn-change-document">
+                    <i class="fas fa-sync-alt"></i> Đổi tài liệu
+                </button>
+            </header>
+
+            <!-- Upload Area -->
+            <div class="upload-section" >
+                <div class="upload-box">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h3>Kéo thả hoặc Click để tải PDF</h3>
+                    <p class="upload-desc">Hỗ trợ file PDF • Tối đa 50MB</p>
+                    <input type="file" id="pdfUpload" accept=".pdf" style="display:none;" multiple>
+                    <button class="btn-secondary" id="uploadBtn">
+                        <i class="fas fa-folder-open"></i> Chọn tập tin PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area" id="chatArea"></div>
+            
+            <div class="corag-option" style="display: none; align-items: center; font-size: 13px;">
+                <label style="display: flex; align-items: center; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="enableCoRAG" style="width: 18px; height: 18px; accent-color: #007BFF;">
+                    <span><strong>Thêm CoRAG</strong> (Corrective RAG)</span>
+                </label>
+            </div>
+            <!-- Input + Status -->
+            <div class="input-section">
+                <div class="filter-bar" id="filterBar" style="display:none; margin-bottom: 8px; align-items: center; gap: 8px;">
+                    <label style="font-size: 13px; color: #555; white-space: nowrap;">
+                        <i class="fas fa-filter"></i> Lọc theo file:
+                    </label>
+                    <select id="fileFilterSelect" style="
+                        flex: 1;
+                        padding: 6px 10px;
+                        border: 1px solid #ccc;
+                        border-radius: 6px;
+                        font-size: 13px;
+                        background: #fff;
+                        cursor: pointer;
+                    ">
+                        <option value="">-- Tất cả tài liệu --</option>
+                    </select>
+                </div>
+
+                <div class="input-wrapper">
+                    <input type="text" class="chat-input" id="questionInput"
+                        placeholder="Vui lòng upload tài liệu PDF/ DOCX trước...">
+                    <button class="btn-primary" id="askBtn" disabled>
+                        <i class="fas fa-paper-plane"></i> Ask
+                    </button>
+                </div>
+
+                <div class="status-bar" id="statusBar" style="display: none;">
+                    <div class="status-item">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>Đã đọc <strong id="pageCount">0</strong> trang</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-cubes"></i>
+                        <span>Đã tạo <strong id="chunkCount">0</strong> chunks</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-database"></i>
+                        <span><strong id="faissStatus">FAISS</strong> Ready</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar Phải -->
+        <aside class="sidebar-right">
+            <div class="history-header">
+                <h3>Lịch sử trò chuyện</h3>
+                <button id="newChatBtn" class="new-chat-btn" title="Tạo chat mới">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+        </aside>
+    </div>
+
+
+    <div id="toast" class="toast">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="toastMessage"></span>
+    </div>
+
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-box">
+            <div class="confirm-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="confirmTitle">Xác nhận</span>
+            </div>
+            <div class="confirm-body" id="confirmMessage">
+                Nội dung
+            </div>
+            <div class="confirm-actions">
+                <button id="cancelBtn" class="btn-cancel">Hủy</button>
+                <button id="confirmBtn" class="btn-danger">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Source Modal -->
+    <div id="sourceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Nội dung gốc <span id="modalPage"></span></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdfViewerModal" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 1150px; height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file-pdf"></i> 
+                    PDF Viewer - Trang <span id="pdfCurrentPage">1</span> 
+                    <small style="font-size:0.9rem; color:#666;">(Highlight từ nguồn RAG)</small>
+                </h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body pdf-modal-body">
+                <div id="pdfPageContainer">
+                    <canvas id="pdfCanvas"></canvas>
+                    <div id="textLayer" class="textLayer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
