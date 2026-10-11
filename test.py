@@ -3,47 +3,69 @@ from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 
-# 1. Cấu hình LLM
-Settings.llm = Ollama(
-    model="qwen2.5:3b",
-    request_timeout=120.0,
-)
+class RAGEngine:
+    def __init__(self):
+        # =========================
+        # 1. Cấu hình LLM
+        # =========================
+        Settings.llm = Ollama(
+            model="qwen2.5:3b",
+            request_timeout=120.0,
+        )
 
-# 2. Cấu hình Embedding
-Settings.embed_model = HuggingFaceEmbedding(
-    model_name="AITeamVN/Vietnamese_Embedding"
-)
+        # =========================
+        # 2. Cấu hình Embedding
+        # =========================
+        Settings.embed_model = HuggingFaceEmbedding(
+            model_name="AITeamVN/Vietnamese_Embedding"
+        )
 
-# 3. Đọc tài liệu PDF
-documents = SimpleDirectoryReader(
-    input_files=["data/project.pdf"]
-).load_data()
+        # Index ban đầu chưa có dữ liệu
+        self.index = None
 
-# 4. Tạo Vector Index
-index = VectorStoreIndex.from_documents(documents)
+        # Query Engine
+        self.query_engine = None
 
-# 5. Tạo Query Engine một lần khi khởi động
-query_engine = index.as_query_engine(
-    similarity_top_k=5
-)
+    # =========================
+    # 3. Thêm tài liệu
+    # =========================
+    def add_document(self, file_path: str):
 
+        documents = SimpleDirectoryReader(
+            input_files=[file_path]
+        ).load_data()
 
-# 6. Hàm để FastAPI gọi
-def answer_question(question: str) -> str:
-    question = question.strip()
-    if not question:
-        return "Vui lòng nhập câu hỏi."
-    response = query_engine.query(question)
-    return str(response)
+        # Nếu chưa có index
+        if self.index is None:
 
+            self.index = VectorStoreIndex.from_documents(
+                documents
+            )
 
-# 7. Chỉ chạy terminal khi thực thi trực tiếp test.py
-if __name__ == "__main__":
-    while True:
-        question = input("\nBạn hỏi: ")
+        # Nếu index đã tồn tại
+        else:
 
-        if question.lower() in ["exit", "quit"]:
-            break
+            for document in documents:
+                self.index.insert(document)
 
-        print("\nTrả lời:")
-        print(answer_question(question))
+        # Tạo lại Query Engine
+        self.query_engine = self.index.as_query_engine(
+            similarity_top_k=5
+        )
+
+    # =========================
+    # 4. Đặt câu hỏi
+    # =========================
+    def ask(self, question: str) -> str:
+
+        question = question.strip()
+
+        if not question:
+            return "Vui lòng nhập câu hỏi."
+
+        if self.query_engine is None:
+            return "Chưa có tài liệu nào được tải lên."
+
+        response = self.query_engine.query(question)
+
+        return str(response)

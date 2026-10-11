@@ -11,8 +11,17 @@ const questionInput = document.getElementById("questionInput"); // Ô nhập câ
 const askBtn = document.getElementById("askBtn");       // Nút hỏi
 const chatArea = document.getElementById("chatArea");   // Khung chat
 
+const groupsList = document.getElementById("documentGroupsList");
+const createGroupForm = document.getElementById("createGroupForm");
+const newGroupName = document.getElementById("newGroupName"); // Nút tạo nhóm
+const searchInput = document.getElementById("documentSearchInput"); // Nút tìm nhóm
+let documentGroups = [];
+
 // Địa chỉ backend FastAPI
 const API_URL = "http://127.0.0.1:8000/chat";
+const UPLOAD_API_URL = "http://127.0.0.1:8000/upload";
+const DOCUMENTS_API_URL = "http://127.0.0.1:8000/documents";
+
 
 // Bật/tắt nút gửi theo nội dung ô nhập
 questionInput.addEventListener("input", () => {
@@ -55,36 +64,7 @@ switchPage("chat"); // Mặc định mở trang chat
 
 
 /* ==========================================
-   DỮ LIỆU GIẢ LẬP
 ========================================== */
-
-let documentGroups = [
-    {
-        name: "Quy định học bổng",
-        files: [
-            { name: "quy-dinh-hoc-bong.pdf", size: "PDF" },
-            { name: "dieu-kien-hoc-bong.docx", size: "DOCX" }
-        ],
-        collapsed: false
-    },
-    {
-        name: "Quy định tín chỉ",
-        files: [
-            { name: "quy-che-dao-tao.pdf", size: "PDF" }
-        ],
-        collapsed: false
-    },
-    {
-        name: "Quy định học phí",
-        files: [],
-        collapsed: false
-    }
-];
-
-const groupsList = document.getElementById("documentGroupsList");
-const createGroupForm = document.getElementById("createGroupForm");
-const newGroupName = document.getElementById("newGroupName"); // Nút tạo nhóm
-const searchInput = document.getElementById("documentSearchInput"); // Nút tìm nhóm
 
 function escapeHTML(value) { // Chống xss
     return String(value).replace(/[&<>"']/g, char => ({
@@ -115,7 +95,43 @@ function updateDocumentStats() { // Thống kê tổng số tài liệu & số n
         documentGroups.reduce((sum, group) => sum + group.files.length, 0);
 }
 
+async function loadDocumentGroups() { // Load document group từ thư mục data
+    try {
+        const response = await fetch(DOCUMENTS_API_URL);
+        if (!response.ok) {
+            throw new Error("Không thể tải danh sách tài liệu.");
+        }
+        const data = await response.json();
+        documentGroups = data.groups.map(group => ({
+            name: group.name,
+            files: group.files.map(file => ({
+                name: file.name,
+                size: file.size,
+                extension: file.extension,
+                path: file.path
+            })),
+            collapsed: false
+        }));
+        console.log(documentGroups)
+        console.log("groupsList:", groupsList);
+console.log("searchInput:", searchInput);
+console.log("totalGroups:", document.getElementById("totalGroups"));
+console.log("totalFiles:", document.getElementById("totalFiles"));
+
+        renderDocumentGroups();
+    } catch (error) {
+        console.error("Lỗi tải nhóm tài liệu:", error);
+        groupsList.innerHTML = `
+            <div class="document-empty-state">
+                Không thể tải danh sách tài liệu từ máy chủ.
+            </div>
+        `;
+    }
+}
+
+
 function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài liệu lên giao diện
+    console.log(documentGroups)
     const keyword = searchInput.value.trim().toLowerCase();
 
     const filteredGroups = documentGroups
@@ -328,50 +344,86 @@ questionInput
    TẢI TỆP DEMO
 ========================================== */
 
-groupsList.addEventListener("change", event => {
-    const input = event.target; // Lấy phần tử phát sự kiện
+/* ==========================================
+   UPLOAD TÀI LIỆU THẬT
+========================================== */
 
-    if (!input.matches(".document-upload-input")) return;
+groupsList.addEventListener("change", async event => {
+    const input = event.target;
+    if (!input.matches(".document-upload-input")) return; // Không phải input upload tài liệu
 
     const groupIndex = Number(input.dataset.group);
     const group = documentGroups[groupIndex];
-
     if (!group) return;
 
     const files = Array.from(input.files || []);
+    if (files.length === 0) return;
     const allowedExtensions = ["pdf", "docx", "txt"];
-    let added = 0;
 
-    files.forEach(file => {
-        const extension = file.name.split(".").pop().toLowerCase();
+    // Upload từng file
+    for (const file of files) {
+        const extension = file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
 
-        if (!allowedExtensions.includes(extension)) return;
+        // Kiểm tra định dạng
+        if (!allowedExtensions.includes(extension)) {
+            alert(`File "${file.name}" không được hỗ trợ.`);
+            continue;
+        }
 
-        const exists = group.files.some(
-            item => item.name.toLowerCase() === file.name.toLowerCase()
-        );
+        try {
 
-        if (!exists) {
+            // =========================
+            // Tạo FormData
+            // =========================
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("group", group.name); // Gửi tên nhóm lên backend
+
+            // =========================
+            // Gửi file lên FastAPI
+            // =========================
+            const response = await fetch(
+                UPLOAD_API_URL,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Upload thất bại."
+                );
+            }
+
+            // =========================
+            // Upload thành công
+            // =========================
             group.files.push({
                 name: file.name,
                 size: extension.toUpperCase()
             });
-            added++;
+            console.log(`Upload thành công: ${file.name}` );  
+        } catch (error) {
+            console.error( `Lỗi upload ${file.name}:`,error);
+            alert(`Không thể upload "${file.name}": ${error.message}` ); 
         }
-    });
-
-    if (added > 0) {
-        alert(`Đã thêm ${added} tệp vào nhóm "${group.name}".`);
-    } else {
-        alert("Không có tệp mới hợp lệ được thêm.");
     }
 
+    // Xóa giá trị input để có thể chọn lại cùng file
+    input.value = "";
+
+    // Render lại giao diện
     renderDocumentGroups();
 });
 
 
 /* Render dữ liệu mẫu ban đầu */
-renderDocumentGroups();
+loadDocumentGroups();
 
 ///////////////////////////////////////////////////////////////////
 
