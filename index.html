@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-{% load static %}
 
 <head>
     <meta charset="UTF-8">
@@ -9,298 +8,310 @@
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body>
-<div class="container">
+    <div class="container">
 
-    <!-- ================= SIDEBAR TRÁI ================= -->
-    <aside class="sidebar-left">
-
-        <div class="logo">
-            <i class="fas fa-graduation-cap"></i>
-            <span>Academic RAG</span>
-        </div>
-
-        <!-- Điều hướng -->
-        <section class="sidebar-section">
-            <h3 class="section-title">
-                <i class="fas fa-thumbtack"></i>
-                ĐIỀU HƯỚNG
-            </h3>
-
-            <nav class="navigation">
-                <a href="#" id="chatNavBtn"
-                   class="nav-item active">
-                    <i class="fas fa-comments"></i>
-                    <span>Hỏi đáp RAG</span>
-                </a>
-
-                <a href="#" id="documentsNavBtn"
-                   class="nav-item">
-                    <i class="fas fa-folder-open"></i>
-                    <span>Quản lý tài liệu</span>
-                </a>
-            </nav>
-        </section>
-
-        <!-- Chọn nhóm tài liệu -->
-        <section class="sidebar-section">
-            <h3 class="section-title">
-                <i class="fas fa-search"></i>
-                NHÓM TÀI LIỆU TRUY VẤN
-            </h3>
-
-            <label for="documentGroupSelect"
-                   class="field-label">
-                Phạm vi tìm kiếm
-            </label>
-
-            <select id="documentGroupSelect"
-                    class="document-select">
-                <option value="">Tất cả tài liệu</option>
-                <option value="Quy định học bổng">
-                    Quy định học bổng
-                </option>
-                <option value="Quy định tín chỉ">
-                    Quy định tín chỉ
-                </option>
-                <option value="Quy định học phí">
-                    Quy định học phí
-                </option>
-            </select>
-
-            <p class="sidebar-hint">
-                Chọn nhóm tài liệu để giới hạn phạm vi tìm kiếm của RAG.
-            </p>
-        </section>
-    </aside>
-
-
-    <!-- ================= MAIN CONTENT ================= -->
-    <main class="main-content" id="mainContent">
-
-        <header class="header">
-            <div>
-                <h1 id="pageTitle">Hỏi đáp quy định học vụ</h1>
-                <p class="subtitle" id="chatSubtitle">
-                    Đang tìm kiếm trong: Tất cả tài liệu
-                </p>
+        <!-- ================= SIDEBAR TRÁI ================= -->
+        <aside class="sidebar-left">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Academic RAG</span>
             </div>
 
-            <button id="changeDocumentBtn"
-                    class="btn-change-document">
-                <i class="fas fa-sync-alt"></i>
-                Đổi tài liệu
-            </button>
-        </header>
+            <!-- Điều hướng -->
+            <section class="sidebar-section">
+                <h3 class="section-title">
+                    <i class="fas fa-thumbtack"></i>
+                    ĐIỀU HƯỚNG
+                </h3>
 
-        <!-- Trang chat -->
-        <section id="chatPage" class="chat-page">
+                <nav class="navigation">
+                    <a href="#" id="chatNavBtn"
+                        class="nav-item active">
+                        <i class="fas fa-comments"></i>
+                        <span>Hỏi đáp RAG</span>
+                    </a>
 
-            <div class="chat-area" id="chatArea">
-                <!-- Tin nhắn sẽ được render bằng JavaScript -->
-            </div>
+                    <a href="#" id="documentsNavBtn"
+                        class="nav-item">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Quản lý tài liệu</span>
+                    </a>
+                </nav>
+            </section>
 
-            <div class="corag-option"
-                 style="display:none; align-items:center; font-size:13px;">
-                <label>
-                    <input type="checkbox" id="enableCoRAG">
-                    <span>
-                        <strong>Thêm CoRAG</strong>
-                        (Corrective RAG)
-                    </span>
+            <!-- Chọn nhóm tài liệu -->
+            <section class="sidebar-section">
+                <h3 class="section-title">
+                    <i class="fas fa-search"></i>
+                    NHÓM TÀI LIỆU TRUY VẤN
+                </h3>
+
+                <label for="documentGroupSelect"
+                    class="field-label">
+                    Phạm vi tìm kiếm
                 </label>
-            </div>
 
-            <div class="input-section">
+                <select id="documentGroupSelect"
+                    class="document-select">
+                    <option value="">Tất cả tài liệu</option>
+                    <option value="Quy định học bổng">
+                        Quy định học bổng
+                    </option>
+                    <option value="Quy định tín chỉ">
+                        Quy định tín chỉ
+                    </option>
+                    <option value="Quy định học phí">
+                        Quy định học phí
+                    </option>
+                </select>
 
-                <!-- Bộ lọc file -->
-                <div class="filter-bar" id="filterBar"
-                     style="display:none;">
-                    <label for="fileFilterSelect">
-                        <i class="fas fa-filter"></i>
-                        Lọc theo file:
-                    </label>
-
-                    <select id="fileFilterSelect">
-                        <option value="">Tất cả tài liệu</option>
-                    </select>
-                </div>
-
-                <!-- Ô nhập câu hỏi -->
-                <div class="input-wrapper">
-                    <input type="text"
-                           class="chat-input"
-                           id="questionInput"
-                           placeholder="Nhập câu hỏi về tài liệu..."
-                           autocomplete="off">
-
-                    <button class="btn-primary"
-                            id="askBtn" disabled>
-                        <i class="fas fa-paper-plane"></i>
-                        Gửi
-                    </button>
-                </div>
-
-                <!-- Trạng thái xử lý tài liệu -->
-                <div class="status-bar" id="statusBar"
-                     style="display:none;">
-
-                    <div class="status-item">
-                        <i class="fas fa-file-pdf"></i>
-                        <span>
-                            Đã đọc <strong id="pageCount">0</strong> trang
-                        </span>
-                    </div>
-
-                    <div class="status-item">
-                        <i class="fas fa-cubes"></i>
-                        <span>
-                            Đã tạo <strong id="chunkCount">0</strong> chunks
-                        </span>
-                    </div>
-
-                    <div class="status-item">
-                        <i class="fas fa-database"></i>
-                        <span>
-                            <strong id="faissStatus">FAISS</strong> Ready
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Trang quản lý tài liệu.
-             Có thể kết nối với Django URL hoặc giao diện quản lý riêng. -->
-        <section id="documentsPage"
-                 class="documents-page"
-                 style="display:none;">
-
-            <h2>Quản lý tài liệu</h2>
-            <p>Quản lý các nhóm tài liệu phục vụ hệ thống RAG.</p>
-
-            <div class="document-management-placeholder">
-                <i class="fas fa-folder-open"></i>
-                <h3>Quản lý nhóm tài liệu</h3>
-                <p>
-                    Kết nối khu vực này với trang quản lý tài liệu
-                    hoặc API Django của bạn.
+                <p class="sidebar-hint">
+                    Chọn nhóm tài liệu để giới hạn phạm vi tìm kiếm của RAG.
                 </p>
-            </div>
-        </section>
+            </section>
+        </aside>
 
-    </main>
+        <!-- ================= MAIN CONTENT ================= -->
+        <main class="main-content" id="mainContent">
+            <header class="header">
+                <div>
+                    <h1 id="pageTitle">Hỏi đáp quy định học vụ</h1>
+                    <p class="subtitle" id="chatSubtitle">
+                        Đang tìm kiếm trong: Tất cả tài liệu
+                    </p>
+                </div>
+            </header>
 
+            <!-- Trang chat -->
+            <section id="chatPage" class="chat-page">
+                <div class="chat-area" id="chatArea">
+                    <!-- Tin nhắn sẽ được render bằng JavaScript -->
+                </div>
 
-    <!-- ================= SIDEBAR PHẢI ================= -->
-    <aside class="sidebar-right">
+                <div class="input-section">
+                    <!-- Ô nhập câu hỏi -->
+                    <div class="input-wrapper">
+                        <input type="text"
+                            class="chat-input"
+                            id="questionInput"
+                            placeholder="Nhập câu hỏi về tài liệu..."
+                            autocomplete="off">
 
-        <div class="history-header">
-            <div class="history-heading">
-                <i class="fas fa-clock"></i>
-                <h3>Lịch sử chat</h3>
-            </div>
+                        <button class="btn-primary"
+                            id="askBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                            Gửi
+                        </button>
+                    </div>
 
-            <button id="newChatBtn"
+                    <!-- Trạng thái xử lý tài liệu -->
+                    <div class="status-bar" id="statusBar"
+                        style="display:none;">
+
+                        <div class="status-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>
+                                Đã đọc <strong id="pageCount">0</strong> trang
+                            </span>
+                        </div>
+
+                        <div class="status-item">
+                            <i class="fas fa-cubes"></i>
+                            <span>
+                                Đã tạo <strong id="chunkCount">0</strong> chunks
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= TRANG QUẢN LÝ TÀI LIỆU ================= -->
+            <section id="documentsPage" class="documents-page" style="display:none;">
+
+                <!-- Tiêu đề -->
+                <div class="documents-heading">
+                    <div class="documents-heading-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+
+                    <div>
+                        <h2>Quản lý tài liệu</h2>
+                        <p>Quản lý các nhóm tài liệu và tệp tin phục vụ hệ thống RAG.</p>
+                    </div>
+                </div>
+
+                <!-- Thống kê -->
+                <div class="document-stats">
+                    <div class="document-stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-folder"></i>
+                        </div>
+
+                        <div>
+                            <span class="stat-label">Tổng số nhóm</span>
+                            <strong id="totalGroups">3</strong>
+                        </div>
+                    </div>
+
+                    <div class="document-stat-card">
+                        <div class="stat-icon yellow">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+
+                        <div>
+                            <span class="stat-label">Tổng số tài liệu</span>
+                            <strong id="totalFiles">3</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tạo nhóm -->
+                <div class="document-panel">
+                    <div class="panel-heading">
+                        <h3>
+                            <i class="fas fa-plus-circle"></i>
+                            Tạo nhóm tài liệu mới
+                        </h3>
+                        <p>Tạo nhóm để phân loại tài liệu theo từng chủ đề.</p>
+                    </div>
+
+                    <form class="create-group-form" id="createGroupForm">
+                        <input
+                            type="text"
+                            id="newGroupName"
+                            placeholder="Ví dụ: Quy định học phí"
+                            autocomplete="off"
+                        >
+
+                        <button type="submit" class="btn-create-group">
+                            <i class="fas fa-plus"></i>
+                            Tạo nhóm
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Danh sách nhóm -->
+                <div class="document-list-heading">
+                    <div>
+                        <h3>Danh sách nhóm tài liệu</h3>
+                        <p>Quản lý các nhóm và tài liệu đã tải lên.</p>
+                    </div>
+
+                    <div class="document-search">
+                        <i class="fas fa-search"></i>
+                        <input
+                            type="search"
+                            id="documentSearchInput"
+                            placeholder="Tìm kiếm nhóm tài liệu..."
+                        >
+                    </div>
+                </div>
+
+                <div class="document-groups-list" id="documentGroupsList">
+                    <!-- JavaScript render các nhóm tài liệu tại đây -->
+                </div>
+            </section>
+        </main>
+
+        <!-- ================= SIDEBAR PHẢI ================= -->
+        <aside class="sidebar-right">
+            <div class="history-header">
+                <div class="history-heading">
+                    <i class="fas fa-clock"></i>
+                    <h3>Lịch sử chat</h3>
+                </div>
+
+                <button id="newChatBtn"
                     class="new-chat-btn"
                     title="Tạo chat mới"
                     aria-label="Tạo chat mới">
-                <i class="fas fa-plus"></i>
-            </button>
-        </div>
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
 
-        <div class="history-list" id="historyList">
-            <!-- Danh sách lịch sử được render bằng JavaScript -->
-        </div>
-
-    </aside>
-</div>
-
-
-<!-- ================= TOAST ================= -->
-<div id="toast" class="toast">
-    <i class="fas fa-exclamation-circle"></i>
-    <span id="toastMessage"></span>
-</div>
-
-
-<!-- ================= CONFIRM DIALOG ================= -->
-<div id="confirmDialog" class="confirm-dialog">
-    <div class="confirm-box">
-
-        <div class="confirm-header">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span id="confirmTitle">Xác nhận</span>
-        </div>
-
-        <div class="confirm-body" id="confirmMessage">
-            Nội dung
-        </div>
-
-        <div class="confirm-actions">
-            <button id="cancelBtn" class="btn-cancel">Hủy</button>
-            <button id="confirmBtn" class="btn-danger">
-                Xác nhận
-            </button>
-        </div>
+            <div class="history-list" id="historyList">
+                <!-- Danh sách lịch sử được render bằng JavaScript -->
+            </div>
+        </aside>
     </div>
-</div>
 
-
-<!-- ================= SOURCE MODAL ================= -->
-<div id="sourceModal" class="modal">
-    <div class="modal-content">
-
-        <div class="modal-header">
-            <h3>
-                <i class="fas fa-file-alt"></i>
-                Nội dung gốc <span id="modalPage"></span>
-            </h3>
-
-            <button class="modal-close" aria-label="Đóng">
-                &times;
-            </button>
-        </div>
-
-        <div class="modal-body" id="modalContent"></div>
+    <!-- ================= TOAST ================= -->
+    <div id="toast" class="toast">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="toastMessage"></span>
     </div>
-</div>
 
+    <!-- ================= CONFIRM DIALOG ================= -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-box">
+            <div class="confirm-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="confirmTitle">Xác nhận</span>
+            </div>
 
-<!-- ================= PDF VIEWER MODAL ================= -->
-<div id="pdfViewerModal" class="modal">
-    <div class="modal-content pdf-modal-content">
+            <div class="confirm-body" id="confirmMessage">
+                Nội dung
+            </div>
 
-        <div class="modal-header">
-            <h3>
-                <i class="fas fa-file-pdf"></i>
-                PDF Viewer - Trang
-                <span id="pdfCurrentPage">1</span>
-                <small>(Highlight từ nguồn RAG)</small>
-            </h3>
-
-            <button class="modal-close" aria-label="Đóng">
-                &times;
-            </button>
-        </div>
-
-        <div class="modal-body pdf-modal-body">
-            <div id="pdfPageContainer">
-                <canvas id="pdfCanvas"></canvas>
-                <div id="textLayer" class="textLayer"></div>
+            <div class="confirm-actions">
+                <button id="cancelBtn" class="btn-cancel">Hủy</button>
+                <button id="confirmBtn" class="btn-danger">
+                    Xác nhận
+                </button>
             </div>
         </div>
-
     </div>
-</div>
 
+    <!-- ================= SOURCE MODAL ================= -->
+    <div id="sourceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file-alt"></i>
+                    Nội dung gốc <span id="modalPage"></span>
+                </h3>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+                <button class="modal-close" aria-label="Đóng">
+                    &times;
+                </button>
+            </div>
 
-<!-- Đặt file JavaScript chính của bạn tại đây -->
-<script src="{% static 'js/main.js' %}"></script>
+            <div class="modal-body" id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- ================= PDF VIEWER MODAL ================= -->
+    <div id="pdfViewerModal" class="modal">
+        <div class="modal-content pdf-modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file-pdf"></i>
+                    PDF Viewer - Trang
+                    <span id="pdfCurrentPage">1</span>
+                    <small>(Highlight từ nguồn RAG)</small>
+                </h3>
+
+                <button class="modal-close" aria-label="Đóng">
+                    &times;
+                </button>
+            </div>
+
+            <div class="modal-body pdf-modal-body">
+                <div id="pdfPageContainer">
+                    <canvas id="pdfCanvas"></canvas>
+                    <div id="textLayer" class="textLayer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="main.js"></script>
 
 </body>
+
 </html>
