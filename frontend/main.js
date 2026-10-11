@@ -7,6 +7,18 @@ const pageTitle = document.getElementById("pageTitle");
 const chatSubtitle = document.getElementById("chatSubtitle"); 
 const filter = document.getElementById("sidebar-section"); 
 const mainHeader = document.querySelector(".main-content > .header");
+const questionInput = document.getElementById("questionInput"); // Ô nhập câu hỏi
+const askBtn = document.getElementById("askBtn");       // Nút hỏi
+const chatArea = document.getElementById("chatArea");   // Khung chat
+
+// Địa chỉ backend FastAPI
+const API_URL = "http://127.0.0.1:8000/chat";
+
+// Bật/tắt nút gửi theo nội dung ô nhập
+questionInput.addEventListener("input", () => {
+    askBtn.disabled = !questionInput.value.trim();
+});
+
 
 function switchPage(page) { 
     const isDocuments = page === "documents";
@@ -310,7 +322,7 @@ groupsList.addEventListener("click", event => { // Lắng nghe sự kiện khi �
         }
     }
 });
-
+questionInput
 
 /* ==========================================
    TẢI TỆP DEMO
@@ -360,3 +372,97 @@ groupsList.addEventListener("change", event => {
 
 /* Render dữ liệu mẫu ban đầu */
 renderDocumentGroups();
+
+///////////////////////////////////////////////////////////////////
+
+
+// Tạo tin nhắn và hiển thị lên giao diện
+function appendMessage(content, role) {
+    const isUser = role === "user";
+
+    const message = document.createElement("div");
+    message.className = `message ${isUser ? "user" : "ai"}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.innerHTML = isUser
+        ? '<i class="fas fa-user"></i>'
+        : '<i class="fas fa-robot"></i>';
+
+    const messageContent = document.createElement("div");
+    messageContent.className = "message-content";
+    messageContent.textContent = content;
+
+    message.appendChild(avatar);
+    message.appendChild(messageContent);
+
+    chatArea.appendChild(message);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    return message;
+}
+
+// Gửi câu hỏi lên FastAPI
+async function sendQuestion() {
+    const question = questionInput.value.trim();
+    if (!question || askBtn.disabled) return;
+    appendMessage(question, "user");
+
+    questionInput.value = "";
+    askBtn.disabled = true;
+    questionInput.disabled = true;
+
+    // Hiển thị trạng thái đang xử lý
+    const loadingMessage = appendMessage(
+        "Đang tìm kiếm tài liệu và tạo câu trả lời...",
+        "assistant"
+    );
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                question: question
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Không thể xử lý câu hỏi."
+            );
+        }
+
+        // Thay trạng thái chờ bằng câu trả lời thật
+        loadingMessage.querySelector(".message-content").textContent =
+            data.answer;
+
+    } catch (error) {
+        loadingMessage.querySelector(".message-content").textContent =
+            "Lỗi: " + error.message;
+
+        console.error("Lỗi gọi FastAPI:", error);
+    } finally {
+        questionInput.disabled = false;
+        askBtn.disabled = !questionInput.value.trim();
+        questionInput.focus();
+    }
+}
+
+// Nhấn nút Gửi
+askBtn.addEventListener("click", sendQuestion);
+
+// Nhấn Enter để gửi câu hỏi
+questionInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+
+        if (!askBtn.disabled) {
+            sendQuestion();
+        }
+    }
+});

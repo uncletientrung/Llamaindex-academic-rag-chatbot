@@ -1,7 +1,3 @@
-
-
-
-
 from src.retrieval.retriever import create_retriever
 from src.ingestion.Index import create_all_indexes
 
