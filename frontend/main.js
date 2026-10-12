@@ -21,12 +21,16 @@ const mainLoadingOverlay = document.getElementById("mainLoadingOverlay"); // Ph�
 const mainLoadingTitle =document.getElementById("mainLoadingTitle");
 const mainLoadingMessage =document.getElementById("mainLoadingMessage");
 
+const toast = document.getElementById("toast");
+const toastMessage = document.getElementById("toastMessage");
 
 // Địa chỉ backend FastAPI
 const API_URL = "http://127.0.0.1:8000/chat";
 const UPLOAD_API_URL = "http://127.0.0.1:8000/upload";
 const DOCUMENTS_API_URL = "http://127.0.0.1:8000/documents";
 const GROUPS_API_URL = "http://127.0.0.1:8000/groups";
+
+
 
 
 
@@ -112,7 +116,7 @@ function updateDocumentStats() { // Thống kê tổng số tài liệu & số n
         documentGroups.reduce((sum, group) => sum + group.files.length, 0);
 }
 
-function renderDocumentGroupSelect() {
+function renderDocumentGroupSelect() { // Hàm cập nhật combobox tài liệu
     const selectedGroup = documentGroupSelect.value;
     documentGroupSelect.innerHTML = `
         <option value="">Tất cả tài liệu</option>
@@ -125,6 +129,65 @@ function renderDocumentGroupSelect() {
     });
     const groupExists = documentGroups.some(group => group.name === selectedGroup);     // Giữ lựa chọn cũ nếu nhóm vẫn còn
     documentGroupSelect.value = groupExists ? selectedGroup : "";
+}
+
+function showToast(message, type = "error") { // Thanh thanh báo bên phải
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+    toastMessage.textContent = message;
+
+    // Có thể tùy chỉnh màu theo type sau này
+    if (type === "success") {
+        toast.style.background = "#28a745";
+    } else {
+        toast.style.background = "#dc3545";   // error mặc định
+    }
+
+    toast.classList.add("show");
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3500);
+}
+
+function confirmDialog(message) { // Dialog confirm trả về T/F
+    return new Promise((resolve) => {
+        const dialog = document.getElementById("confirmDialog");
+        const msg = document.getElementById("confirmMessage");
+        msg.innerHTML = message;
+        dialog.classList.add("show");
+
+        const confirmBtn = document.getElementById("confirmBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+        // Click bên ngoài
+        const handleOutsideClick = (e) => {
+            if (e.target === dialog) {
+                handleCancel();
+            }
+        };
+        // Nhấn esc
+        const handleEsc = (e) => {
+            if (e.key === "Escape") {
+                handleCancel();
+            }
+        };
+
+        function cleanup() { // Xóa Dialog
+            dialog.classList.remove("show");
+            confirmBtn.removeEventListener("click", handleConfirm);
+            cancelBtn.removeEventListener("click", handleCancel);
+        }
+
+        confirmBtn.addEventListener("click", handleConfirm);
+        cancelBtn.addEventListener("click", handleCancel);
+    });
 }
 
 /* ==========================================
@@ -344,38 +407,87 @@ searchInput.addEventListener("input", renderDocumentGroups);
 /* ==========================================
    THU GỌN / XÓA NHÓM / XÓA TỆP
 ========================================== */
-groupsList.addEventListener("click", event => { // Lắng nghe sự kiện khi ấn bất kì vào chỗ nào ở groupList
+groupsList.addEventListener("click", async event => { // Lắng nghe sự kiện khi ấn bất kì vào chỗ nào ở groupList
     const button = event.target.closest("[data-action]");
     if (!button) return;
 
     const groupIndex = Number(button.dataset.group); // button.dataset.group LÀ LẤY data-group="0"
     const action = button.dataset.action;
-
-    if (!documentGroups[groupIndex]) return;
+    const group = documentGroups[groupIndex];
+    if (!group) return;
 
     if (action === "toggle") { // Đóng mở nhóm
-        documentGroups[groupIndex].collapsed =  !documentGroups[groupIndex].collapsed;
+        group.collapsed = !group.collapsed;
         renderDocumentGroups();
+        return;
     }
 
     if (action === "delete-file") { // Xóa file
-        const fileIndex = Number(button.dataset.file);
-        const file = documentGroups[groupIndex].files[fileIndex];
-
+        const fileIndex = Number(button.dataset.file); // button.dataset.file LÀ LẤY data-file
+        const file = group.files[fileIndex];
         if (!file) return;
+        const ok = await confirmDialog(
+            "Bạn có chắc muốn xóa tài liệu này?<br><small>Hành động này không thể hoàn tác.</small>"
+        );
+        if (!ok) return;
 
-        if (confirm(`Bạn có muốn xóa tệp "${file.name}" không?`)) {
-            documentGroups[groupIndex].files.splice(fileIndex, 1);
-            renderDocumentGroups();
+        showMainLoading( "Đang xóa tài liệu và cập nhật lại RAG", `Đang xóa ${file.name}`);
+        try {
+            const formData = new FormData();
+            formData.append("group", group.name);
+            formData.append("filename", file.name);
+            const response = await fetch("http://127.0.0.1:8000/documents/file",
+                {
+                    method: "DELETE",
+                    body: formData
+                }
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Không thể xóa file."
+                );
+            }
+            showToast(`Xóa ${file.name} khỏi thư mục ${group.name} thành công!`, "success") 
+            await loadDocumentGroups();
+        } catch (error) {
+            console.error("Lỗi xóa file:", error);
+            alert("Lỗi: " + error.message);
+        } finally {
+            hideMainLoading();
+            if (button.isConnected) {
+                button.disabled = false;
+            }
         }
+        return;
     }
 
-    if (action === "delete-group") { // Xóa group
-        const group = documentGroups[groupIndex];
-
-        if (confirm(`Bạn có muốn xóa nhóm "${group.name}" không?`)) {
-            documentGroups.splice(groupIndex, 1);
-            renderDocumentGroups();
+    if (action === "delete-group") {
+        const ok = await confirmDialog(
+            "Bạn có chắc muốn xóa tài liệu này?<br><small>Hành động này không thể hoàn tác.</small>"
+        );
+        if (!ok) return;
+        showMainLoading( "Đang xóa nhóm tài liệu và cập nhật lại RAG", `Đang xóa thư mục ${group.name}`);
+        try {
+            const response = await fetch(
+                `http://127.0.0.1:8000/groups/${encodeURIComponent(group.name)}`,
+                { method: "DELETE" }
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Không thể xóa nhóm."
+                );
+            }
+           showToast(`Xóa thư mục ${group.name} thành công!`, "success") 
+            await loadDocumentGroups();
+        } catch (error) {
+            console.error("Lỗi xóa nhóm:", error);
+            alert("Lỗi: " + error.message);
+        } finally {
+            if (button.isConnected) {
+                button.disabled = false;
+            }
         }
     }
 });
@@ -393,7 +505,7 @@ groupsList.addEventListener("change", async event => {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
     const allowedExtensions = ["pdf", "docx", "txt"];
-    showMainLoading( "Đang upload tài liệu", `Đang chuẩn bị ${files.length} tệp...`);
+    showMainLoading( "Đang upload tài liệu và cập nhật lại RAG", `Đang chuẩn bị ${files.length} tệp...`);
     // Upload từng file
     for (const file of files) {
         const extension = file.name.split(".").pop().toLowerCase();
@@ -420,7 +532,7 @@ groupsList.addEventListener("change", async event => {
                     data.detail || "Upload thất bại."
                 );
             }
-            console.log(`Upload thành công: ${file.name}` );  
+            showToast(`Upload thành công ${file.name}!`, "success") 
         } catch (error) {
             console.error( `Lỗi upload ${file.name}:`,error);
             alert(`Không thể upload "${file.name}": ${error.message}` ); 

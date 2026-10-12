@@ -47,6 +47,29 @@ class RAGEngine:
                 similarity_top_k=5
             )
 
+        print("Đã nạp xong tài liệu vào RAG.")
+
+    def rebuild_index(self):
+        supported_extensions = {".pdf", ".docx", ".txt"}
+        files = [
+            str(path)
+            for path in self.data_dir.rglob("*")
+            if path.is_file()
+            and path.suffix.lower() in supported_extensions
+        ]
+        # Xóa index cũ trước khi tạo index mới
+        self.index = None
+        self.query_engine = None
+        if not files:
+            return
+        documents = SimpleDirectoryReader(input_files=files).load_data()
+        if documents:
+            self.index = VectorStoreIndex.from_documents(documents)
+            self.query_engine = self.index.as_query_engine(
+                similarity_top_k=5
+            )
+
+        print(f"Đã xây dựng lại RAG từ {len(files)} file.")
 
     # =========================
     # 3. Thêm tài liệu
@@ -66,19 +89,26 @@ class RAGEngine:
             similarity_top_k=5
         )
 
+
     # =========================
     # 4. Đặt câu hỏi
     # =========================
     def ask(self, question: str) -> str:
-
         question = question.strip()
-
         if not question:
             return "Vui lòng nhập câu hỏi."
-
         if self.query_engine is None:
             return "Chưa có tài liệu nào được tải lên."
-
         response = self.query_engine.query(question)
-
         return str(response)
+
+    def delete_document(self, file_path: str):
+        target = Path(file_path).resolve()
+        # Chỉ cho phép xóa file bên trong thư mục dữ liệu
+        if not target.is_relative_to(self.data_dir):
+            raise ValueError("Đường dẫn tài liệu không hợp lệ.")
+
+        if not target.is_file():
+            raise FileNotFoundError("Không tìm thấy tài liệu.")
+        target.unlink()
+        self.rebuild_index()

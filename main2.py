@@ -24,7 +24,7 @@ app.add_middleware(
         "http://localhost:8000",
     ],
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -137,4 +137,91 @@ async def upload_file(file: UploadFile = File(...), group: str = Form(...)):
         "message": "Upload thành công",
         "filename": file.filename,
         "group": group
+    }
+
+@app.delete("/documents/file")
+def delete_file(group: str = Form(...), filename: str = Form(...)): # Xóa file
+    if (not group or group in {".", ".."} or "/" in group or "\\" in group or not filename or Path(filename).name != filename):
+        raise HTTPException(
+            status_code=400,
+            detail="Đường dẫn file không hợp lệ."
+        )
+
+    group_dir = (DATA_DIR / group).resolve()
+    if group_dir.parent != DATA_DIR or not group_dir.is_dir(): # Nếu thư mục nhóm không có thư mục cha
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy nhóm tài liệu."
+        )
+
+    file_path = (group_dir / filename).resolve()
+    if file_path.parent != group_dir: # Nếu file không có thư mục cha
+        raise HTTPException(
+            status_code=400,
+            detail="Đường dẫn file không hợp lệ."
+        )
+
+    if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Định dạng file không được hỗ trợ."
+        )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy file."
+        )
+
+    try:
+        rag_engine.delete_document(str(file_path))
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy file."
+        )
+    except Exception:
+        import logging
+        logging.exception("Lỗi khi xóa tài liệu khỏi RAG")
+        raise HTTPException(
+            status_code=500,
+            detail="Không thể xóa tài liệu."
+        )
+
+    return {
+        "message": "Đã xóa file khỏi thư mục và RAG.",
+        "filename": filename,
+        "group": group
+    }
+
+
+@app.delete("/groups/{name}")
+def delete_group(name: str): # Xóa thư mục
+    if (not name or name in {".", ".."} or "/" in name or "\\" in name ):
+        raise HTTPException(
+            status_code=400,
+            detail="Tên nhóm không hợp lệ."
+        )
+
+    group_dir = (DATA_DIR / name).resolve()
+    if group_dir.parent != DATA_DIR or not group_dir.is_dir():
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy nhóm tài liệu."
+        )
+
+    try:
+        shutil.rmtree(group_dir) # Xóa toàn bộ thư mục nhóm và các file bên trong
+        rag_engine.rebuild_index()  # Xây dựng lại RAG từ tất cả file còn lại
+    except Exception:
+        import logging
+        logging.exception("Lỗi khi xóa nhóm tài liệu")
+        raise HTTPException(
+            status_code=500,
+            detail="Không thể hoàn tất việc xóa nhóm."
+        )
+
+    return {
+        "message": "Đã xóa nhóm và cập nhật RAG.",
+        "name": name
     }
