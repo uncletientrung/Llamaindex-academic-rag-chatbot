@@ -24,13 +24,17 @@ class RAGEngine:
 
     def add_document(self, file_path: str):
         documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
-        if not documents:
+        nodes = self.pipeline.process_documents(documents)
+        if not nodes:
             return
         if self.index is None:
-            self.index = VectorStoreIndex.from_documents(documents)
+            self.index = VectorStoreIndex(
+                nodes=nodes,
+                storage_context=self.pipeline.get_storage(),
+            )
         else:
-            for document in documents:
-                self.index.insert(document)
+            self.index.insert_nodes(nodes)
+
         self.query_engine = self.index.as_query_engine(similarity_top_k=5)
             
     def ask(self, question: str) -> str:

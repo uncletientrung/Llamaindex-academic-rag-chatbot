@@ -16,6 +16,12 @@ from src.promts.promt_extractor import (
     TITLE_COMBINE_PROMT,
     KEYWORD_PROMT,
 )
+from llama_index.core import StorageContext
+from llama_index.core.storage.docstore import SimpleDocumentStore
+from llama_index.core.storage.index_store import SimpleIndexStore
+from llama_index.core.graph_stores import SimpleGraphStore
+from llama_index.core.vector_stores import SimpleVectorStore
+
 
 class Pipeline:
     SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
@@ -24,11 +30,12 @@ class Pipeline:
         # 1. Cấu hình
         # =========================
         Settings.llm = Ollama(model="qwen2.5:3b",request_timeout=120.0,)
-
         Settings.embed_model = HuggingFaceEmbedding(model_name="AITeamVN/Vietnamese_Embedding")
+
         self.data_dir = Path(data_dir).resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.nodes = None
+        self.storage_context = None
 
     def get_files(self) -> list[str]:
         return [
@@ -38,11 +45,8 @@ class Pipeline:
                 and path.suffix.lower() in self.SUPPORTED_EXTENSIONS
             ]
 
-    def get_nodes(self):
-        documents = self.load_document()
-        if not documents:
-            return []
-        split = SentenceSplitter(chunk_size= 500, chunk_overlap=100)
+    def get_nodes(self, documents):
+        split = SentenceSplitter(chunk_size= 800, chunk_overlap=200)
         titleEx = TitleExtractor(
             llm=Settings.llm,
             nodes=5,
@@ -55,10 +59,8 @@ class Pipeline:
             prompt_template= KEYWORD_PROMT
         )
 
-        transform = [
-            split,
-            titleEx,
-            keywordEx,
+        transform = [ split,
+                    #   titleEx, keywordEx,
             # EntityExtractor(prediction_threshold=0.5),
             # SummaryExtractor(summaries=["prev", "self"]),
             # QuestionsAnsweredExtractor(questions=3),
@@ -67,9 +69,20 @@ class Pipeline:
         ingestion = IngestionPipeline(transformations=transform)
         nodes = ingestion.run(documents = documents)
         return nodes
-        
+
+    def get_storage(self):
+        storage = StorageContext(
+            docstore=SimpleDocumentStore(),
+            index_store=SimpleIndexStore(),
+            vector_stores={
+                "default": SimpleVectorStore()
+            },
+            graph_store=SimpleGraphStore(),
+        )
+        return storage
+
     
-    def load_document(self):
+    def load_document(self): # Trả về mảng document được đọc ra
         files= self.get_files()
         if not files:
             return []
@@ -78,5 +91,21 @@ class Pipeline:
     def build_index(self):
         documents = self.load_document()
         if not documents:
+            self.nodes = []
+            self.storage_context = None
             return None
-        return VectorStoreIndex.from_documents(documents)
+        
+        self.nodes = self.process_documents(documents)
+        if not self.nodes:
+            return None
+        
+        self.storage_context = self.get_storage()
+
+        vector_index = VectorStoreIndex(nodes=self.nodes, storage_context=self.storage_context)
+        return vector_index
+
+    def process_documents(self, documents):
+        if not documents:
+            return []
+
+        return self.get_nodes(documents)

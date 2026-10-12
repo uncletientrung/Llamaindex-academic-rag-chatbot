@@ -127,6 +127,17 @@ async def upload_file(file: UploadFile = File(...), group: str = Form(...)):
     group_dir.mkdir(parents=True, exist_ok=True)
     file_path = group_dir / file.filename # Đường dẫn file
 
+    if not file.filename or Path(file.filename).name != file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Tên file không hợp lệ.",
+        )
+    if Path(file.filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Định dạng file không được hỗ trợ.",
+        )
+
     # Lưu file thật xuống máy
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
