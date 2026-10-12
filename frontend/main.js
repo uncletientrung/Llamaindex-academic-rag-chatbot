@@ -1,26 +1,33 @@
-
 const chatNavBtn = document.getElementById("chatNavBtn");              
 const documentsNavBtn = document.getElementById("documentsNavBtn");
 const chatPage = document.getElementById("chatPage");
 const documentsPage = document.getElementById("documentsPage");
 const pageTitle = document.getElementById("pageTitle");
 const chatSubtitle = document.getElementById("chatSubtitle"); 
-const filter = document.getElementById("sidebar-section"); 
+// const filter = document.getElementById("sidebar-section"); 
 const mainHeader = document.querySelector(".main-content > .header");
 const questionInput = document.getElementById("questionInput"); // Ô nhập câu hỏi
 const askBtn = document.getElementById("askBtn");       // Nút hỏi
 const chatArea = document.getElementById("chatArea");   // Khung chat
+const documentGroupSelect = document.getElementById("documentGroupSelect"); // combobox thư mục
 
 const groupsList = document.getElementById("documentGroupsList");
-const createGroupForm = document.getElementById("createGroupForm");
+const createGroupBtn = document.getElementById("createGroupBtn");
 const newGroupName = document.getElementById("newGroupName"); // Nút tạo nhóm
 const searchInput = document.getElementById("documentSearchInput"); // Nút tìm nhóm
 let documentGroups = [];
+
+const mainLoadingOverlay = document.getElementById("mainLoadingOverlay"); // Phần loading
+const mainLoadingTitle =document.getElementById("mainLoadingTitle");
+const mainLoadingMessage =document.getElementById("mainLoadingMessage");
+
 
 // Địa chỉ backend FastAPI
 const API_URL = "http://127.0.0.1:8000/chat";
 const UPLOAD_API_URL = "http://127.0.0.1:8000/upload";
 const DOCUMENTS_API_URL = "http://127.0.0.1:8000/documents";
+const GROUPS_API_URL = "http://127.0.0.1:8000/groups";
+
 
 
 // Bật/tắt nút gửi theo nội dung ô nhập
@@ -60,11 +67,21 @@ documentsNavBtn.addEventListener("click", (event) => { // Chạy sự kiện khi
     event.preventDefault();
     switchPage("documents");
 });
-switchPage("chat"); // Mặc định mở trang chat
 
+const initialPage = documentsPage.style.display === "block" ? "documents" : "chat";
+switchPage(initialPage);
 
-/* ==========================================
-========================================== */
+/* ===================== Các hàm xử lý giao diện===================== */
+
+function showMainLoading(title = "Đang tải dữ liệu",  message = "Vui lòng chờ trong giây lát...") {
+    mainLoadingTitle.textContent = title;
+    mainLoadingMessage.textContent = message;
+    mainLoadingOverlay.style.display = "flex";
+}
+
+function hideMainLoading() {
+    mainLoadingOverlay.style.display = "none";
+}
 
 function escapeHTML(value) { // Chống xss
     return String(value).replace(/[&<>"']/g, char => ({
@@ -95,6 +112,24 @@ function updateDocumentStats() { // Thống kê tổng số tài liệu & số n
         documentGroups.reduce((sum, group) => sum + group.files.length, 0);
 }
 
+function renderDocumentGroupSelect() {
+    const selectedGroup = documentGroupSelect.value;
+    documentGroupSelect.innerHTML = `
+        <option value="">Tất cả tài liệu</option>
+    `;
+    documentGroups.forEach(group => {
+        const option = document.createElement("option");
+        option.value = group.name;
+        option.textContent = group.name;
+        documentGroupSelect.appendChild(option);
+    });
+    const groupExists = documentGroups.some(group => group.name === selectedGroup);     // Giữ lựa chọn cũ nếu nhóm vẫn còn
+    documentGroupSelect.value = groupExists ? selectedGroup : "";
+}
+
+/* ==========================================
+   Tải danh sách thư mục
+========================================== */
 async function loadDocumentGroups() { // Load document group từ thư mục data
     try {
         const response = await fetch(DOCUMENTS_API_URL);
@@ -113,12 +148,8 @@ async function loadDocumentGroups() { // Load document group từ thư mục dat
             collapsed: false
         }));
         console.log(documentGroups)
-        console.log("groupsList:", groupsList);
-console.log("searchInput:", searchInput);
-console.log("totalGroups:", document.getElementById("totalGroups"));
-console.log("totalFiles:", document.getElementById("totalFiles"));
-
         renderDocumentGroups();
+        renderDocumentGroupSelect();
     } catch (error) {
         console.error("Lỗi tải nhóm tài liệu:", error);
         groupsList.innerHTML = `
@@ -262,33 +293,44 @@ function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài li�
 /* ==========================================
    TẠO NHÓM
 ========================================== */
-
-createGroupForm.addEventListener("submit", event => {
-    event.preventDefault();
+createGroupBtn.addEventListener("click", async () => {
     const name = newGroupName.value.trim();
-
     if (!name) {
         alert("Vui lòng nhập tên nhóm tài liệu.");
         newGroupName.focus();
         return;
     }
 
-    const exists = documentGroups.some( group => group.name.toLowerCase() === name.toLowerCase()); // Kiểm tra tồn tại
-        
+    const exists = documentGroups.some(group => group.name.toLowerCase() === name.toLowerCase());
     if (exists) {
         alert("Nhóm tài liệu này đã tồn tại.");
         return;
     }
 
-    documentGroups.push({
-        name,
-        files: [],
-        collapsed: false
-    });
-
-    newGroupName.value = "";
-    searchInput.value = "";
-    renderDocumentGroups();
+    createGroupBtn.disabled = true;
+    try {
+        const response = await fetch(GROUPS_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Không thể tạo nhóm tài liệu."
+            );
+        }
+        newGroupName.value = "";
+        searchInput.value = "";
+        await loadDocumentGroups();
+    } catch (error) {
+        console.error("Lỗi tạo nhóm:", error);
+        alert("Lỗi: " + error.message);
+    } finally {
+        createGroupBtn.disabled = false;
+    }
 });
 
 
@@ -302,7 +344,6 @@ searchInput.addEventListener("input", renderDocumentGroups);
 /* ==========================================
    THU GỌN / XÓA NHÓM / XÓA TỆP
 ========================================== */
-
 groupsList.addEventListener("click", event => { // Lắng nghe sự kiện khi ấn bất kì vào chỗ nào ở groupList
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -338,20 +379,13 @@ groupsList.addEventListener("click", event => { // Lắng nghe sự kiện khi �
         }
     }
 });
-questionInput
-
-/* ==========================================
-   TẢI TỆP DEMO
-========================================== */
 
 /* ==========================================
    UPLOAD TÀI LIỆU THẬT
 ========================================== */
-
 groupsList.addEventListener("change", async event => {
     const input = event.target;
     if (!input.matches(".document-upload-input")) return; // Không phải input upload tài liệu
-
     const groupIndex = Number(input.dataset.group);
     const group = documentGroups[groupIndex];
     if (!group) return;
@@ -359,33 +393,20 @@ groupsList.addEventListener("change", async event => {
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
     const allowedExtensions = ["pdf", "docx", "txt"];
-
+    showMainLoading( "Đang upload tài liệu", `Đang chuẩn bị ${files.length} tệp...`);
     // Upload từng file
     for (const file of files) {
-        const extension = file.name
-            .split(".")
-            .pop()
-            .toLowerCase();
-
-        // Kiểm tra định dạng
-        if (!allowedExtensions.includes(extension)) {
+        const extension = file.name.split(".").pop().toLowerCase();
+        if (!allowedExtensions.includes(extension)) {// Kiểm tra định dạng
             alert(`File "${file.name}" không được hỗ trợ.`);
             continue;
         }
 
         try {
-
-            // =========================
-            // Tạo FormData
-            // =========================
             const formData = new FormData();
             formData.append("file", file);
             formData.append("group", group.name); // Gửi tên nhóm lên backend
-
-            // =========================
-            // Gửi file lên FastAPI
-            // =========================
-            const response = await fetch(
+            const response = await fetch( //Gửi file lên FastAPI
                 UPLOAD_API_URL,
                 {
                     method: "POST",
@@ -399,14 +420,6 @@ groupsList.addEventListener("change", async event => {
                     data.detail || "Upload thất bại."
                 );
             }
-
-            // =========================
-            // Upload thành công
-            // =========================
-            group.files.push({
-                name: file.name,
-                size: extension.toUpperCase()
-            });
             console.log(`Upload thành công: ${file.name}` );  
         } catch (error) {
             console.error( `Lỗi upload ${file.name}:`,error);
@@ -416,9 +429,9 @@ groupsList.addEventListener("change", async event => {
 
     // Xóa giá trị input để có thể chọn lại cùng file
     input.value = "";
-
+    hideMainLoading();
     // Render lại giao diện
-    renderDocumentGroups();
+    await loadDocumentGroups();
 });
 
 

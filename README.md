@@ -723,3 +723,5 @@ USER QUERY ──►  Retrieval
 ```
 
 Đây là pipeline RAG cốt lõi được sử dụng để giải quyết bài toán **tra cứu quy định học vụ từ tài liệu nội bộ**.
+
+thêm "**/data/**" vào liveServer.settings.ignoreFiles

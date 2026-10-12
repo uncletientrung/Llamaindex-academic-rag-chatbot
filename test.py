@@ -1,10 +1,13 @@
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from pathlib import Path
+from pydantic import BaseModel
+import shutil
 
 
 class RAGEngine:
-    def __init__(self):
+    def __init__(self, data_dir="data"):
         # =========================
         # 1. Cấu hình LLM
         # =========================
@@ -20,31 +23,41 @@ class RAGEngine:
             model_name="AITeamVN/Vietnamese_Embedding"
         )
 
-        # Index ban đầu chưa có dữ liệu
+        self.data_dir = Path(data_dir).resolve()
+        self.data_dir.mkdir(parents=True, exist_ok=True)
         self.index = None
-
-        # Query Engine
         self.query_engine = None
+        self.load_existing_documents()
+
+    def load_existing_documents(self): # Nạp dữ liệu ban đầu
+        supported_extensions = {".pdf", ".docx", ".txt"}
+        files = [
+            str(path)
+            for path in self.data_dir.rglob("*") # rglob("*") là duyệt đệ quy tất cả các 
+            if path.is_file()
+            and path.suffix.lower() in supported_extensions
+        ]
+        if not files:
+            return
+
+        documents = SimpleDirectoryReader(input_files=files).load_data()
+        if documents:
+            self.index = VectorStoreIndex.from_documents(documents)
+            self.query_engine = self.index.as_query_engine(
+                similarity_top_k=5
+            )
+
 
     # =========================
     # 3. Thêm tài liệu
     # =========================
     def add_document(self, file_path: str):
-
-        documents = SimpleDirectoryReader(
-            input_files=[file_path]
-        ).load_data()
-
+        documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
         # Nếu chưa có index
         if self.index is None:
-
-            self.index = VectorStoreIndex.from_documents(
-                documents
-            )
-
+            self.index = VectorStoreIndex.from_documents(documents)
         # Nếu index đã tồn tại
         else:
-
             for document in documents:
                 self.index.insert(document)
 

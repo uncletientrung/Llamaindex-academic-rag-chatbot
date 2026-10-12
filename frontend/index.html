@@ -50,23 +50,12 @@
                     NHÓM TÀI LIỆU TRUY VẤN
                 </h3>
 
-                <label for="documentGroupSelect"
-                    class="field-label">
+                <label for="documentGroupSelect"class="field-label"></label>
                     Phạm vi tìm kiếm
                 </label>
 
-                <select id="documentGroupSelect"
-                    class="document-select">
+                <select id="documentGroupSelect" class="document-select">
                     <option value="">Tất cả tài liệu</option>
-                    <option value="Quy định học bổng">
-                        Quy định học bổng
-                    </option>
-                    <option value="Quy định tín chỉ">
-                        Quy định tín chỉ
-                    </option>
-                    <option value="Quy định học phí">
-                        Quy định học phí
-                    </option>
                 </select>
 
                 <p class="sidebar-hint">
@@ -77,6 +66,23 @@
 
         <!-- ================= MAIN CONTENT ================= -->
         <main class="main-content" id="mainContent">
+            <!-- Loading overlay trong main-content -->
+            <div id="mainLoadingOverlay" class="main-loading-overlay"
+                style="display: none;"
+                role="status"
+                aria-live="polite">
+
+                <div class="main-loading-dialog">
+                    <div class="loading-spinner-large"></div>
+
+                    <h3 id="mainLoadingTitle">Đang tải dữ liệu</h3>
+
+                    <p id="mainLoadingMessage">
+                        Vui lòng chờ trong giây lát...
+                    </p>
+                </div>
+            </div>
+
             <header class="header">
                 <div>
                     <h1 id="pageTitle">Hỏi đáp quy định học vụ</h1>
@@ -179,7 +185,7 @@
                         <p>Tạo nhóm để phân loại tài liệu theo từng chủ đề.</p>
                     </div>
 
-                    <form class="create-group-form" id="createGroupForm">
+                    <div class="create-group-form" id="createGroupForm">
                         <input
                             type="text"
                             id="newGroupName"
@@ -187,11 +193,11 @@
                             autocomplete="off"
                         >
 
-                        <button type="submit" class="btn-create-group">
+                        <button type="button" class="btn-create-group" id="createGroupBtn">
                             <i class="fas fa-plus"></i>
                             Tạo nhóm
                         </button>
-                    </form>
+                    </div>
                 </div>
 
                 <!-- Danh sách nhóm -->
