@@ -485,6 +485,7 @@ groupsList.addEventListener("click", async event => { // Lắng nghe sự kiện
             console.error("Lỗi xóa nhóm:", error);
             alert("Lỗi: " + error.message);
         } finally {
+            hideMainLoading();
             if (button.isConnected) {
                 button.disabled = false;
             }

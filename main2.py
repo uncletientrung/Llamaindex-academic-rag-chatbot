@@ -211,8 +211,10 @@ def delete_group(name: str): # Xóa thư mục
         )
 
     try:
+        has_files = any(file.is_file() for file in group_dir.rglob("*")) # check bên trong đó có file hay không
         shutil.rmtree(group_dir) # Xóa toàn bộ thư mục nhóm và các file bên trong
-        rag_engine.rebuild_index()  # Xây dựng lại RAG từ tất cả file còn lại
+        if has_files:
+            rag_engine.rebuild_index()  # Xây dựng lại RAG từ tất cả file còn lại
     except Exception:
         import logging
         logging.exception("Lỗi khi xóa nhóm tài liệu")
