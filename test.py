@@ -36,6 +36,7 @@ class RAGService:
             query_engine = index.as_query_engine(
                 text_qa_template = QA_PROMPT,
                 similarity_top_k=SIMILARITY_TOP_K,
+                streaming=True # Bật streaming
             )
             self.query_engines[group_name] = query_engine
 
@@ -67,7 +68,6 @@ class RAGService:
 
         # Chế độ chọn 1 nhóm riêng
         if group != ALL_GROUPS:
-
             query_engine = self.query_engines.get(group)
             if query_engine is None:
                 return f"Không tìm thấy index cho nhóm '{group}'."
@@ -76,11 +76,35 @@ class RAGService:
             return str(response)
 
          # Chế độ tất cả folder
-        if self.router_query_engine is None:
-            return "Chưa có tài liệu nào được tải lên."
+        else:
+            query_engine = self.router_query_engine
+            if query_engine is None:
+                return "Chưa có tài liệu nào được tải lên."
 
-        response = self.router_query_engine.query(question)
-        return str(response)
+            response = query_engine.query(question)
+            return str(response)
+
+    def ask_stream(self, question: str, group: str = ALL_GROUPS):
+        question = question.strip()
+        if not question:
+            yield "Vui lòng nhập câu hỏi."
+            return
+        
+        if group != ALL_GROUPS: # Chế độ chọn 1 nhóm riêng
+            query_engine = self.query_engines.get(group)
+            if query_engine is None:
+                yield f"Không tìm thấy index cho nhóm '{group}'."
+                return
+            
+        else: # Chế độ tất cả folder
+            query_engine = self.router_query_engine
+            if query_engine is None:
+                yield "Chưa có tài liệu nào được tải lên."
+                return
+
+        response = query_engine.query(question)
+        for chunk in response.response_gen:
+            yield chunk
 
     def add_document(self, file_path: str):
         target = Path(file_path).resolve()

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
 import shutil
@@ -87,21 +88,10 @@ def chat(request: ChatRequest):
             detail="Vui lòng nhập câu hỏi."
         )
     
-    try:
-        answer = rag_engine.ask(
-            question=question,
-            group=group,
-        )
-        return ChatResponse(answer=answer)
-
-    except Exception:
-        import logging         # Ghi chi tiết lỗi ở terminal để dễ debug
-        logging.exception("Lỗi khi xử lý câu hỏi")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Không thể xử lý câu hỏi. Vui lòng thử lại."
-        )
+    return StreamingResponse(
+        rag_engine.ask_stream(question, group),
+        media_type="text/plain; charset=utf-8",
+    )
 
 @app.post("/groups")
 def create_group(request: CreateGroupRequest): # Tạo thư mục

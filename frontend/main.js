@@ -599,6 +599,8 @@ async function sendQuestion() {
         "Đang tìm kiếm tài liệu và tạo câu trả lời...",
         "assistant"
     );
+    const messageContent = loadingMessage.querySelector(".message-content");
+        
 
     try {
         const response = await fetch(API_URL, {
@@ -612,17 +614,55 @@ async function sendQuestion() {
             })
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
             throw new Error(
                 data.detail || "Không thể xử lý câu hỏi."
             );
         }
+        // BƯỚC 7: Kiểm tra khả năng đọc stream
+        if (!response.body) {
+            throw new Error(
+                "Trình duyệt không hỗ trợ đọc stream."
+            );
+        }
+        const reader = response.body.getReader();
+        console.log(reader);
+        const decoder = new TextDecoder("utf-8");
+        let isFirstChunk = true; // Dùng để kiểm tra đã có chunk đầu tiên chưa để xóa chữ đang tìm của Assistant
+        let buffer = "";
+        const STREAM_DELAY = 10; // Thời gian nghỉ giữa các lần hiển thị 
+        const CHARS_PER_STEP = 5; // Số ký tự hiển thị mỗi lần
 
-        // Thay trạng thái chờ bằng câu trả lời thật
-        loadingMessage.querySelector(".message-content").textContent = data.answer;
-            
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break; // Nếu stream đã kết thúc thì thoát vòng lặp
+            buffer += decoder.decode(value, {
+                stream: true
+            });
+
+            if (isFirstChunk) {
+                messageContent.textContent = "";
+                isFirstChunk = false;
+            }
+
+            while (buffer.length > 0) {
+                const chunk = buffer.slice(0, CHARS_PER_STEP);
+                buffer = buffer.slice(CHARS_PER_STEP);
+                messageContent.textContent += chunk;
+                await new Promise(resolve => setTimeout(resolve, STREAM_DELAY));
+
+            }
+        }
+
+        // Giải mã phần dữ liệu còn lại
+        const remainingText = decoder.decode();
+        if (remainingText) {
+            if (isFirstChunk) {
+                messageContent.textContent = "";
+            }
+            messageContent.textContent += remainingText;
+        }
+
 
     } catch (error) {
         loadingMessage.querySelector(".message-content").textContent =
