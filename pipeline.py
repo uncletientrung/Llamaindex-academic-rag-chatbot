@@ -21,10 +21,13 @@ from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.storage.index_store import SimpleIndexStore
 from llama_index.core.graph_stores import SimpleGraphStore
 from llama_index.core.vector_stores import SimpleVectorStore
+from constants import (
+    SUPPORTED_EXTENSIONS,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_CHUNK_OVERLAP,
+)
 
-
-class Pipeline:
-    SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+class DocumentIngestionPipeline:
     def __init__(self, data_dir="data"):
         # =========================
         # 1. Cấu hình
@@ -45,10 +48,10 @@ class Pipeline:
             ],key=lambda path: path.name.lower()
         )
 
-    def load_documents(self, folder: Path):
+    def load_documents(self, folder: Path): # Load các doc từ file
         reader = SimpleDirectoryReader(
             input_dir=str(folder),
-            required_exts=list(self.SUPPORTED_EXTENSIONS), # các định đạng được sử dụng
+            required_exts=list(SUPPORTED_EXTENSIONS), # các định đạng được sử dụng
         )
         return reader.load_data()
 
@@ -59,11 +62,11 @@ class Pipeline:
                 str(path)
                 for path in self.data_dir.rglob("*") # rglob("*") là duyệt đệ quy tất cả các 
                 if path.is_file()
-                and path.suffix.lower() in self.SUPPORTED_EXTENSIONS
+                and path.suffix.lower() in SUPPORTED_EXTENSIONS
             ]
 
-    def get_nodes(self, documents):
-        split = SentenceSplitter(chunk_size= 800, chunk_overlap=200)
+    def get_nodes(self, documents): # Hàm lấy các nodes đã extractor và embed
+        split = SentenceSplitter(chunk_size= DEFAULT_CHUNK_SIZE, chunk_overlap=DEFAULT_CHUNK_OVERLAP)
         titleEx = TitleExtractor(
             llm=Settings.llm,
             nodes=5,
@@ -87,7 +90,7 @@ class Pipeline:
         nodes = ingestion.run(documents = documents)
         return nodes
 
-    def get_storage(self):
+    def get_storage(self): # Hàm định nghĩa storage
         storage = StorageContext(
             docstore=SimpleDocumentStore(),
             index_store=SimpleIndexStore(),
@@ -98,7 +101,7 @@ class Pipeline:
         )
         return storage
 
-    def build_indexes(self) -> dict[str, VectorStoreIndex]:
+    def build_indexes(self) -> dict[str, VectorStoreIndex]: # Hàm build các index
         self.indices = {}
         for folder in self.get_subfolders():
             print(f"Đang xử lý thư mục: {folder.name}")
@@ -120,9 +123,3 @@ class Pipeline:
                 f"({len(documents)} document, {len(nodes)} nodes)"
             )
         return self.indices
-
-    def process_documents(self, documents):
-        if not documents:
-            return []
-
-        return self.get_nodes(documents)    

@@ -1,0 +1,7 @@
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+ALL_GROUPS = "all" # value của khi chọn tất cả nhóm
+
+DEFAULT_CHUNK_SIZE = 800
+DEFAULT_CHUNK_OVERLAP = 200
+
+SIMILARITY_TOP_K = 5

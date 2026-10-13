@@ -5,14 +5,17 @@ from pathlib import Path
 from pydantic import BaseModel
 import shutil
 
-from test import RAGEngine
-
+from test import RAGService
+from constants import (
+    ALL_GROUPS,
+    SUPPORTED_EXTENSIONS,
+)
 
 app = FastAPI(title="Academic RAG API")
 DATA_DIR = Path("data").resolve()
 DATA_DIR.mkdir(exist_ok=True)
-rag_engine = RAGEngine()
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+rag_engine = RAGService()
+
 
 # Cho phép frontend đang chạy bằng Live Server gọi API
 app.add_middleware(
