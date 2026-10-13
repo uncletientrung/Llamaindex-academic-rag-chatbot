@@ -34,8 +34,25 @@ class Pipeline:
 
         self.data_dir = Path(data_dir).resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.nodes = None
-        self.storage_context = None
+
+        self.indices: dict[str, VectorStoreIndex]={}
+
+    def get_subfolders(self) -> list[Path]:
+        return sorted([
+            path
+            for path in self.data_dir.iterdir()
+            if path.is_dir()
+            ],key=lambda path: path.name.lower()
+        )
+
+    def load_documents(self, folder: Path):
+        reader = SimpleDirectoryReader(
+            input_dir=str(folder),
+            required_exts=list(self.SUPPORTED_EXTENSIONS), # các định đạng được sử dụng
+        )
+        return reader.load_data()
+
+
 
     def get_files(self) -> list[str]:
         return [
@@ -81,31 +98,31 @@ class Pipeline:
         )
         return storage
 
-    
-    def load_document(self): # Trả về mảng document được đọc ra
-        files= self.get_files()
-        if not files:
-            return []
-        return SimpleDirectoryReader(input_files=files).load_data()
+    def build_indexes(self) -> dict[str, VectorStoreIndex]:
+        self.indices = {}
+        for folder in self.get_subfolders():
+            print(f"Đang xử lý thư mục: {folder.name}")
+            documents = self.load_documents(folder)
+            if not documents:
+                print(f"Bỏ qua thư mục rỗng: {folder.name}")
+                continue
 
-    def build_index(self):
-        documents = self.load_document()
-        if not documents:
-            self.nodes = []
-            self.storage_context = None
-            return None
-        
-        self.nodes = self.process_documents(documents)
-        if not self.nodes:
-            return None
-        
-        self.storage_context = self.get_storage()
-
-        vector_index = VectorStoreIndex(nodes=self.nodes, storage_context=self.storage_context)
-        return vector_index
+            nodes = self.get_nodes(documents)
+            if not nodes:
+                print(f"Không tạo được nodes: {folder.name}")
+                continue
+                        
+            storage_context = self.get_storage()
+            index = VectorStoreIndex(nodes= nodes, storage_context= storage_context)
+            self.indices[folder.name] = index
+            print(
+                f"Đã tạo index: {folder.name} "
+                f"({len(documents)} document, {len(nodes)} nodes)"
+            )
+        return self.indices
 
     def process_documents(self, documents):
         if not documents:
             return []
 
-        return self.get_nodes(documents)
+        return self.get_nodes(documents)    

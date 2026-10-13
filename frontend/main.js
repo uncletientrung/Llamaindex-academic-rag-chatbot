@@ -119,7 +119,7 @@ function updateDocumentStats() { // Thống kê tổng số tài liệu & số n
 function renderDocumentGroupSelect() { // Hàm cập nhật combobox tài liệu
     const selectedGroup = documentGroupSelect.value;
     documentGroupSelect.innerHTML = `
-        <option value="">Tất cả tài liệu</option>
+        <option value="all">Tất cả tài liệu</option>
     `;
     documentGroups.forEach(group => {
         const option = document.createElement("option");
@@ -128,7 +128,7 @@ function renderDocumentGroupSelect() { // Hàm cập nhật combobox tài liệu
         documentGroupSelect.appendChild(option);
     });
     const groupExists = documentGroups.some(group => group.name === selectedGroup);     // Giữ lựa chọn cũ nếu nhóm vẫn còn
-    documentGroupSelect.value = groupExists ? selectedGroup : "";
+    documentGroupSelect.value = groupExists ? selectedGroup : "all";
 }
 
 function showToast(message, type = "error") { // Thanh thanh báo bên phải
@@ -584,11 +584,15 @@ function appendMessage(content, role) {
 async function sendQuestion() {
     const question = questionInput.value.trim();
     if (!question || askBtn.disabled) return;
+
+    const selectedGroup = documentGroupSelect.value || "all";
+
     appendMessage(question, "user");
 
     questionInput.value = "";
     askBtn.disabled = true;
     questionInput.disabled = true;
+    documentGroupSelect.disabled = true;
 
     // Hiển thị trạng thái đang xử lý
     const loadingMessage = appendMessage(
@@ -603,7 +607,8 @@ async function sendQuestion() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                question: question
+                question: question,
+                group: selectedGroup
             })
         });
 
@@ -616,8 +621,8 @@ async function sendQuestion() {
         }
 
         // Thay trạng thái chờ bằng câu trả lời thật
-        loadingMessage.querySelector(".message-content").textContent =
-            data.answer;
+        loadingMessage.querySelector(".message-content").textContent = data.answer;
+            
 
     } catch (error) {
         loadingMessage.querySelector(".message-content").textContent =
@@ -626,6 +631,7 @@ async function sendQuestion() {
         console.error("Lỗi gọi FastAPI:", error);
     } finally {
         questionInput.disabled = false;
+        documentGroupSelect.disabled = false;
         askBtn.disabled = !questionInput.value.trim();
         questionInput.focus();
     }

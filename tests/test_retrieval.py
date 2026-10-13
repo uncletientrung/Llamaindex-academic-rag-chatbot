@@ -27,6 +27,7 @@ from src.promts.promt_extractor import (
 
 from src.retrieval.retriever import create_retriever
 from src.retrieval.reranker import create_reranker
+from pipeline import Pipeline
 
 
 # =========================
@@ -47,39 +48,19 @@ Settings.embed_model = HuggingFaceEmbedding(
     model_name="AITeamVN/Vietnamese_Embedding"
 )
 
+a = Pipeline()
+pprint(a.get_subfolders())
+
 # =========================
 # 3. Đọc PDF
 # =========================
 
-documents2 = SimpleDirectoryReader(
-    input_files=["data/quyet_dinh.pdf"]
-).load_data()
-
-split = SentenceSplitter(chunk_size= 500, chunk_overlap=100)
-titleEx = TitleExtractor(
-    llm=Settings.llm,
-    nodes=5,
-    node_template=TITLE_NODE_PROMT,
-    combine_template=TITLE_COMBINE_PROMT,
-)
-keywordEx = KeywordExtractor(
-    llm= Settings.llm,
-    keywords=5,
-    prompt_template= KEYWORD_PROMT
-)
-
-transform = [
-            split,
-            titleEx,
-            keywordEx,
-            Settings.embed_model
-        ]
-ingestion = IngestionPipeline(transformations=transform)
-nodes = ingestion.run(documents = documents2)
-
-pprint(nodes)
 
 
+
+# documents2 = SimpleDirectoryReader(
+#     input_files=["data/quyet_dinh.pdf"]
+# ).load_data()
 # documents = SimpleDirectoryReader(
 #     input_files=["data/project.pdf"]
 # ).load_data()

@@ -32,6 +32,7 @@ app.add_middleware(
 # Định dạng dữ liệu nhận từ frontend
 class ChatRequest(BaseModel):
     question: str
+    group: str = "all"
 
 # Định dạng dữ liệu trả về frontend
 class ChatResponse(BaseModel):
@@ -75,14 +76,19 @@ def get_documents(): # Đọc danh sách nhóm từ thư mục data
 @app.post("/chat", response_model=ChatResponse) # response_model=ChatResponse: Khai báo cấu trúc phản hồi mong muốn.
 def chat(request: ChatRequest):
     question = request.question.strip()
+    group = request.group.strip()
 
     if not question:
         raise HTTPException(
             status_code=400,
             detail="Vui lòng nhập câu hỏi."
         )
+    
     try:
-        answer = rag_engine.ask(question)
+        answer = rag_engine.ask(
+            question=question,
+            group=group,
+        )
         return ChatResponse(answer=answer)
 
     except Exception:
