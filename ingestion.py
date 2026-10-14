@@ -83,7 +83,8 @@ class DocumentIngestionPipeline:
         )
 
         transform = [ split,
-                    #   titleEx, keywordEx,
+                      titleEx,
+                    #  keywordEx,
             # EntityExtractor(prediction_threshold=0.5),
             # SummaryExtractor(summaries=["prev", "self"]),
             # QuestionsAnsweredExtractor(questions=3),

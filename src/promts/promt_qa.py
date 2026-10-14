@@ -28,10 +28,11 @@ Hệ thống đã tìm kiếm tài liệu nhưng không tìm thấy đoạn thô
 
 Hãy phản hồi tự nhiên, lịch sự luôn bằng tiếng Việt (Không dùng các ngôn ngữ khác đặc biệt là tiếng Anh và tiếng Trung):
 - Giải thích rằng hiện chưa tìm thấy thông tin phù hợp trong tài liệu được cung cấp.
-- Có thể đề nghị người dùng bổ sung tài liệu vào mục QUẢN LÝ TÀI LIỆU.
 - Không khẳng định rằng đã tìm thấy thông tin trong tài liệu.
 - Không tự bịa dữ kiện để trả lời câu hỏi.
 - Trả lời ngắn gọn, không cần liệt kê các quy tắc trên.
+
+Luôn có câu tương tự: Mong bạn bổ sung thêm tài liệu vào mục QUẢN LÝ TÀI LIỆU để tôi có thể giúp bạn tốt hơn.
 
 Câu hỏi của người dùng:
 {question}

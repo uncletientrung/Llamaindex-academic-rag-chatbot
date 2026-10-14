@@ -27,7 +27,7 @@ from src.promts.promt_extractor import (
 
 from src.retrieval.retriever import create_retriever
 from src.retrieval.reranker import create_reranker
-from ingestion import Pipeline
+from ingestion import DocumentIngestionPipeline
 
 
 # =========================
@@ -48,8 +48,23 @@ Settings.embed_model = HuggingFaceEmbedding(
     model_name="AITeamVN/Vietnamese_Embedding"
 )
 
-a = Pipeline()
-pprint(a.get_subfolders())
+ig = DocumentIngestionPipeline()
+
+for folder in ig.get_subfolders():
+    print(f"Đang xử lý thư mục: {folder.name}")
+    documents = ig.load_documents(folder)
+    if not documents:
+        print(f"Bỏ qua thư mục rỗng: {folder.name}")
+        continue
+
+    nodes = ig.get_nodes(documents)
+    for i, node in enumerate(nodes, start=1):
+        print(f"Node {i}:")
+        print("document_title:", node.metadata.get("document_title"))
+        print("-" * 50)
+
+
+
 
 # =========================
 # 3. Đọc PDF

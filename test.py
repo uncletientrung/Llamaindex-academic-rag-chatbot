@@ -117,17 +117,17 @@ class RAGService:
                 yield "Chưa có tài liệu nào được tải lên."
                 return
 
-        nodes = query_engine.retrieve(question)
-        print ("========1============================")
+        query_bundle = QueryBundle(query_str=question) # SBERT Rerank cần lấy câu hỏi qua query_bundle.query_str để so sánh với từng đoạn tài liệu và xếp hạng lại.
+        nodes = query_engine.retrieve(query_bundle)
         if not nodes:
             yield from self.fallback_stream(question)
             return
-        print ("========2============================")
-        response = query_engine.response_synthesizer.synthesize(
-            query=QueryBundle(query_str=question),
+
+        response = query_engine._response_synthesizer.synthesize(
+            query=query_bundle,
             nodes=nodes,
         )
-        print ("========3============================")
+        
         # response = query_engine.query(question)
         for chunk in response.response_gen:
             print(chunk)

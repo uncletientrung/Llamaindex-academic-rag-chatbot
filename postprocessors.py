@@ -24,8 +24,6 @@ class NodePostprocessorFactory:
         ]
 
 
-
-
 class DebugNodePostprocessor(BaseNodePostprocessor):
     def _postprocess_nodes(
         self,
