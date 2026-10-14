@@ -27,7 +27,7 @@ from src.promts.promt_extractor import (
 
 from src.retrieval.retriever import create_retriever
 from src.retrieval.reranker import create_reranker
-from pipeline import Pipeline
+from ingestion import Pipeline
 
 
 # =========================

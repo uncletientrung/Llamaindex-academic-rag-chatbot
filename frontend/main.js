@@ -636,6 +636,7 @@ async function sendQuestion() {
         while (true) {
             const { value, done } = await reader.read();
             if (done) break; // Nếu stream đã kết thúc thì thoát vòng lặp
+            // messageContent.textContent += decoder.decode(value, { stream: true});
             buffer += decoder.decode(value, {
                 stream: true
             });
@@ -655,6 +656,7 @@ async function sendQuestion() {
         }
 
         // Giải mã phần dữ liệu còn lại
+        // messageContent.textContent += decoder.decode();
         const remainingText = decoder.decode();
         if (remainingText) {
             if (isFirstChunk) {
