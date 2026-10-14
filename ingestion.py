@@ -68,7 +68,7 @@ class DocumentIngestionPipeline:
         )
         return reader.load_data()
 
-    def get_nodes(self, documents): # Hàm lấy các nodes đã extractor và embed
+    def get_nodes(self, documents, folder_name: str): # Hàm lấy các nodes đã extractor và embed
         split = SentenceSplitter(chunk_size= DEFAULT_CHUNK_SIZE, chunk_overlap=DEFAULT_CHUNK_OVERLAP)
         titleEx = TitleExtractor(
             llm=Settings.llm,
@@ -92,6 +92,9 @@ class DocumentIngestionPipeline:
         ]
         ingestion = IngestionPipeline(transformations=transform)
         nodes = ingestion.run(documents = documents)
+
+        for node in nodes:
+            node.metadata["folder_name"] = folder_name 
         return nodes
 
     def get_storage(self): # Hàm định nghĩa storage
@@ -114,7 +117,7 @@ class DocumentIngestionPipeline:
                 print(f"Bỏ qua thư mục rỗng: {folder.name}")
                 continue
 
-            nodes = self.get_nodes(documents)
+            nodes = self.get_nodes(documents, folder_name=folder.name)
             if not nodes:
                 print(f"Không tạo được nodes: {folder.name}")
                 continue

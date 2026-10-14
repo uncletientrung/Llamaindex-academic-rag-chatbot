@@ -8,6 +8,7 @@ from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import RouterRetriever
 from llama_index.core.tools import RetrieverTool
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 from src.promts.promt_qa import  QA_PROMPT, FALLBACK_PROMPT
 from constants import (
     ALL_GROUPS,
@@ -16,8 +17,6 @@ from constants import (
 )
 from postprocessors import NodePostprocessorFactory
 from responsesynthesizer import ResponseSynthesizerFactory
-
-   
 
 class RAGService:
     def __init__(self, data_dir="data"):
@@ -55,9 +54,17 @@ class RAGService:
 
         retriever_tools  = [] 
         for group_name, index in self.indices.items(): #  query engine riêng cho mỗi folder
-            retriever = index.as_retriever(
-                similarity_top_k=SIMILARITY_TOP_K
+            filters = MetadataFilters( # Lọc theo tên folder của index
+                filters=[
+                    MetadataFilter(
+                        key="folder_name",
+                        value=group_name,
+                    ),
+                ]
             )
+
+            retriever = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K, filters= filters)
+                
             self.query_engines[group_name] = self.build_query_engine(retriever)
 
             tool = RetrieverTool.from_defaults( # Các các option tool cho router retriever
