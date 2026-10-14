@@ -1,7 +1,6 @@
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from pathlib import Path
-from pydantic import BaseModel
-import shutil
+from llama_index.core.schema import QueryBundle
 from ingestion import DocumentIngestionPipeline
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.tools import QueryEngineTool
@@ -9,7 +8,7 @@ from llama_index.core.selectors import LLMSingleSelector
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import RouterRetriever
 from llama_index.core.tools import RetrieverTool
-from src.promts.promt_qa import  QA_PROMPT
+from src.promts.promt_qa import  QA_PROMPT, FALLBACK_PROMPT
 from constants import (
     ALL_GROUPS,
     SUPPORTED_EXTENSIONS,
@@ -75,13 +74,12 @@ class RAGService:
             self.router_retriever = RouterRetriever.from_defaults(
                 selector=LLMSingleSelector.from_defaults(),
                 retriever_tools=retriever_tools,
-                verbose=False, # Hiển thị text hồng trên terminal đang chọn cái gì
             )
 
             self.router_query_engine = self.build_query_engine(self.router_retriever) # bỏ vào router query
 
             
-    def ask(self, question: str, group: str = ALL_GROUPS) -> str:
+    def ask(self, question: str, group: str = ALL_GROUPS) -> str: # ĐANG KHÔNG DÙNG
         question = question.strip()
         if not question:
             return "Vui lòng nhập câu hỏi."
@@ -119,9 +117,29 @@ class RAGService:
                 yield "Chưa có tài liệu nào được tải lên."
                 return
 
-        response = query_engine.query(question)
+        nodes = query_engine.retrieve(question)
+        print ("========1============================")
+        if not nodes:
+            yield from self.fallback_stream(question)
+            return
+        print ("========2============================")
+        response = query_engine.response_synthesizer.synthesize(
+            query=QueryBundle(query_str=question),
+            nodes=nodes,
+        )
+        print ("========3============================")
+        # response = query_engine.query(question)
         for chunk in response.response_gen:
+            print(chunk)
             yield chunk
+
+    def fallback_stream(self, question: str):
+        prompt = FALLBACK_PROMPT.format(question=question)
+        llm = self.synthesizer_factory.llm # Lấy llm trong synthesizer_factory
+        response = llm.stream_complete(prompt)
+        for chunk in response:
+            if chunk.delta:
+                yield chunk.delta
 
     def add_document(self, file_path: str):
         target = Path(file_path).resolve()

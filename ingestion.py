@@ -25,6 +25,7 @@ from constants import (
     SUPPORTED_EXTENSIONS,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_CHUNK_OVERLAP,
+    EMBEDDING_MODEL
 )
 
 class DocumentIngestionPipeline:
@@ -33,7 +34,7 @@ class DocumentIngestionPipeline:
         # 1. Cấu hình
         # =========================
         Settings.llm = Ollama(model="qwen2.5:3b",request_timeout=120.0,)
-        Settings.embed_model = HuggingFaceEmbedding(model_name="AITeamVN/Vietnamese_Embedding")
+        Settings.embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
 
         self.data_dir = Path(data_dir).resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -47,23 +48,25 @@ class DocumentIngestionPipeline:
             if path.is_dir()
             ],key=lambda path: path.name.lower()
         )
+    
+    def get_files(self, folder: Path) -> list[str]:
+        return [
+            str(path)
+            for path in folder.rglob("*")
+            if path.is_file()
+            and path.suffix.lower() in SUPPORTED_EXTENSIONS
+        ]
 
     def load_documents(self, folder: Path): # Load các doc từ file
+        files = self.get_files(folder)
+        if not files:
+            print(f"Bỏ qua thư mục không có file hợp lệ: {folder.name}")
+            return []
+        
         reader = SimpleDirectoryReader(
-            input_dir=str(folder),
-            required_exts=list(SUPPORTED_EXTENSIONS), # các định đạng được sử dụng
+            input_files=files
         )
         return reader.load_data()
-
-
-
-    def get_files(self) -> list[str]:
-        return [
-                str(path)
-                for path in self.data_dir.rglob("*") # rglob("*") là duyệt đệ quy tất cả các 
-                if path.is_file()
-                and path.suffix.lower() in SUPPORTED_EXTENSIONS
-            ]
 
     def get_nodes(self, documents): # Hàm lấy các nodes đã extractor và embed
         split = SentenceSplitter(chunk_size= DEFAULT_CHUNK_SIZE, chunk_overlap=DEFAULT_CHUNK_OVERLAP)
