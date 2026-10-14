@@ -1,5 +1,6 @@
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from pathlib import Path
+import shutil
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.extractors import (
@@ -16,7 +17,7 @@ from src.promts.promt_extractor import (
     TITLE_COMBINE_PROMT,
     KEYWORD_PROMT,
 )
-from llama_index.core import StorageContext
+from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.storage.index_store import SimpleIndexStore
 from llama_index.core.graph_stores import SimpleGraphStore
@@ -38,6 +39,9 @@ class DocumentIngestionPipeline:
 
         self.data_dir = Path(data_dir).resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
+
+        self.storage_dir = self.data_dir.parent / "storage"
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         self.indices: dict[str, VectorStoreIndex]={}
 
@@ -117,7 +121,7 @@ class DocumentIngestionPipeline:
                 print(f"Bỏ qua thư mục rỗng: {folder.name}")
                 continue
 
-            nodes = self.get_nodes(documents, folder_name=folder.name)
+            nodes = self.get_nodes(documents)
             if not nodes:
                 print(f"Không tạo được nodes: {folder.name}")
                 continue
@@ -129,4 +133,71 @@ class DocumentIngestionPipeline:
                 f"Đã tạo index: {folder.name} "
                 f"({len(documents)} document, {len(nodes)} nodes)"
             )
+        return self.indices
+    
+    def build_indexes(self, rebuild_groups: set[str] | None = None,) -> dict[str, VectorStoreIndex]:
+        self.indices = {}
+
+        rebuild_groups = rebuild_groups or set()
+
+        folders = self.get_subfolders()
+        current_groups = {folder.name for folder in folders}
+
+        # Xóa storage của những nhóm tài liệu đã bị xóa
+        for saved_dir in self.storage_dir.iterdir(): # Lấy các folder và file đã lưu vào storage
+            if saved_dir.is_dir() and saved_dir.name not in current_groups:
+                shutil.rmtree(saved_dir)
+
+        for folder in folders:
+            group_name = folder.name
+            persist_dir = self.storage_dir / group_name
+            print(f"Đang xử lý nhóm: {group_name}")
+
+            # Load lại index đã lưu
+            if (persist_dir.is_dir() and group_name not in rebuild_groups):
+                try:
+                    storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir) )
+                    index = load_index_from_storage(storage_context)
+                    self.indices[group_name] = index
+                    print(f"Đã load index từ storage: {group_name}")
+                    continue
+
+                except Exception as ex:
+                    print(
+                        f"Không load được {group_name}: {ex}. "
+                        "Sẽ build lại."
+                    )
+                    shutil.rmtree(persist_dir, ignore_errors=True)
+
+            # Chưa có storage hoặc cần cập nhật index
+            documents = self.load_documents(folder)
+            if not documents:
+                print(f"Bỏ qua thư mục rỗng: {folder.name}")
+                continue
+
+            nodes = self.get_nodes(documents, folder_name=group_name)
+            if not nodes:
+                print(f"Không tạo được nodes: {group_name}")
+                continue
+
+            # Mỗi nhóm có một storage riêng
+            storage_context = self.get_storage()
+            index = VectorStoreIndex(
+                nodes=nodes,
+                storage_context=storage_context,
+            )
+
+            # Lưu Node, vector và index xuống ổ đĩa
+            persist_dir.mkdir(parents=True, exist_ok=True)
+            index.storage_context.persist(
+                persist_dir=str(persist_dir)
+            )
+
+            self.indices[group_name] = index
+
+            print(
+                f"Đã build và lưu index: {group_name} "
+                f"({len(documents)} documents, {len(nodes)} nodes)"
+            )
+
         return self.indices

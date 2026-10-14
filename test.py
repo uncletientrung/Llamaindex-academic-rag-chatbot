@@ -46,8 +46,8 @@ class RAGService:
             ),
         )
 
-    def rebuild_index(self):
-        self.indices = self.ingest.build_indexes()
+    def rebuild_index(self, rebuild_groups: set[str] | None = None,):
+        self.indices = self.ingest.build_indexes(rebuild_groups= rebuild_groups)
         self.query_engines = {}
         self.router_query_engine = None
         self.router_retriever = None
@@ -153,12 +153,15 @@ class RAGService:
         group_dir = target.parent
         if group_dir.parent != self.data_dir:
             raise ValueError("Tài liệu phải nằm trong một nhóm.")
-
-        self.rebuild_index()
+        
+        self.rebuild_index(rebuild_groups={group_dir.name})
+            
         
 
     def delete_document(self, file_path: str):
         target = Path(file_path).resolve()
+        group_dir = target.parent
         target.unlink()
-        self.rebuild_index()
+
+        self.rebuild_index(rebuild_groups={group_dir.name})
 
