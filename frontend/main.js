@@ -623,8 +623,9 @@ function renderHistory() {
         if ( conversation.conversation_id === currentConversationId){
             item.classList.add("active");
         }
-
         const title = conversation.title?.trim() || "Cuộc trò chuyện mới";
+        item.dataset.conversationId = conversation.conversation_id;
+
         item.innerHTML = `
             <div class="history-content">
                 <i class="fas fa-comments"></i>
@@ -632,17 +633,62 @@ function renderHistory() {
                 <div class="history-text">
                     <div class="history-title"></div>
                 </div>
+
+                <button
+                    class="delete-chat-btn"
+                    data-action="delete-conversation"
+                    title="Xóa cuộc trò chuyện"
+                >
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
         `;
 
-        // Dùng textContent để tránh chèn HTML từ title
-        item.querySelector(".history-title").textContent =
-            title.length > 25
-                ? title.substring(0, 25) + "..."
-                : title;
-
+        item.querySelector(".history-title").textContent = title.length > 25 ? title.substring(0, 25) + "..." : title;    
         historyList.appendChild(item);
     });
+}
+
+// Tải toàn bộ message của một cuộc trò chuyện
+async function loadConversation_Messages(conversationId) {
+    
+    try {
+        showMainLoading( "Đang tải cuộc trò chuyện", "Đang tải lại lịch sử tin nhắn...");
+        const response = await fetch(
+            `${CONVERSATIONS_API_URL}/${conversationId}`
+        );
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(
+                data.detail || "Không thể tải cuộc trò chuyện."
+            );
+        }
+
+        const data = await response.json();
+        currentConversationId = data.conversation_id; // Đặt lại id đoạn chat
+        chatArea.innerHTML = "";
+        // Hiển thị lại toàn bộ message
+        for (const message of data.messages || []) {
+            appendMessage(
+                message.content,
+                message.role
+            );
+        }
+
+        // Cập nhật trạng thái active bên sidebar
+        renderHistory();
+        chatArea.scrollTop = chatArea.scrollHeight; // Scroll xuống cuối
+
+    } catch (error) {
+        console.error("Lỗi tải cuộc trò chuyện:", error);
+        showToast(
+            "Không thể tải lịch sử trò chuyện: " + error.message,
+            "error"
+        );
+    } finally {
+        hideMainLoading();
+        questionInput.focus();
+    }
 }
 
 // Gửi câu hỏi lên FastAPI
@@ -667,8 +713,6 @@ async function sendQuestion() {
     const messageContent = loadingMessage.querySelector(".message-content");
         
     try {
-        console.log(currentConversationId);
-        
         const response = await fetch(API_URL, {
             method: "POST",
             headers: {
@@ -687,13 +731,11 @@ async function sendQuestion() {
                 errorData.detail || "Không thể xử lý câu hỏi."
             );
         }
-
+        
         // Backend trả ID qua header X-Conversation-ID
         const conversationId = response.headers.get("X-Conversation-ID");
         if (conversationId) {
             currentConversationId = conversationId;
-            console.log(conversationId);
-            
             renderHistory();
         }
 
@@ -735,7 +777,7 @@ async function sendQuestion() {
             }
             messageContent.textContent += remainingText;
         }
-        // await loadConversations();
+        await loadConversations();
 
     } catch (error) {
         loadingMessage.querySelector(".message-content").textContent =
@@ -780,4 +822,88 @@ questionInput.addEventListener("keydown", event => {
     }
 });
 
-// loadConversations();
+loadConversations();
+
+// Xử lý click vào lịch sử chat
+historyList.addEventListener("click", async event => {
+    // ============================
+    // XÓA CUỘC TRÒ CHUYỆN
+    // ============================
+    const deleteButton = event.target.closest('[data-action="delete-conversation"]');
+    if (deleteButton) {
+        event.stopPropagation();
+        const historyItem = deleteButton.closest(".history-item");
+        if (!historyItem) return;
+
+        const conversationId = historyItem.dataset.conversationId;
+
+        const conversation = conversations.find(
+            item => item.conversation_id === conversationId
+        );
+
+        const title = conversation?.title?.trim() || "Cuộc trò chuyện này";
+        const ok = await confirmDialog(
+            `Bạn có chắc muốn xóa cuộc trò chuyện "<strong>${escapeHTML(title)}</strong>"?<br>
+             <small>Toàn bộ tin nhắn trong cuộc trò chuyện sẽ bị xóa.</small>`
+        );
+
+        if (!ok) return;
+        try {
+            const response = await fetch(
+                `${CONVERSATIONS_API_URL}/${encodeURIComponent(conversationId)}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Không thể xóa cuộc trò chuyện."
+                );
+            }
+
+            // Nếu đang xóa conversation hiện tại
+            if (currentConversationId === conversationId) {
+                currentConversationId = null;
+                chatArea.innerHTML = "";
+            }
+
+            showToast(
+                "Đã xóa cuộc trò chuyện.",
+                "success"
+            );
+
+            // Tải lại danh sách history
+            await loadConversations();
+
+        } catch (error) {
+            console.error("Lỗi xóa cuộc trò chuyện:", error);
+            showToast(
+                "Không thể xóa cuộc trò chuyện: " + error.message,
+                "error"
+            );
+        }
+
+        return;
+    }
+
+
+    // ============================
+    // CLICK VÀO CUỘC TRÒ CHUYỆN
+    // ============================
+    const historyItem = event.target.closest(".history-item");
+    
+    
+    if (!historyItem) return;
+    const conversationId = historyItem.dataset.conversationId;
+
+    if (!conversationId) return;
+
+    // Nếu click lại conversation đang mở thì không cần tải lại
+    if (conversationId === currentConversationId) {
+        return;
+    }
+
+    await loadConversation_Messages(conversationId);
+});

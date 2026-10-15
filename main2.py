@@ -85,6 +85,7 @@ def get_documents(): # Đọc danh sách nhóm từ thư mục data
 @app.post("/chat", response_model=ChatResponse) # response_model=ChatResponse: Khai báo cấu trúc phản hồi mong muốn.
 def chat(request: ChatRequest):
     question = request.question.strip()
+    print(question)
     group = request.group.strip()
 
     if not question:
@@ -107,10 +108,11 @@ def chat(request: ChatRequest):
                 status_code=404,
                 detail="Không tìm thấy cuộc trò chuyện.",
             )
-
+    
     history = chat_storage.get_messages(conversation_id)
     chat_storage.add_message(conversation_id,"user",question) # Lưu câu hỏi vào chatStorage 
-    
+
+
     def generate_response(): # Hàm trong hàm
             full_response = ""
             for chunk in rag_engine.ask_stream(question,group, history):
@@ -119,11 +121,10 @@ def chat(request: ChatRequest):
                 
             if full_response:
                 chat_storage.add_message(conversation_id, "assistant",full_response)
-                        
     return StreamingResponse(
         generate_response(),
         media_type="text/plain; charset=utf-8",
-        headers={
+        headers={   
             "X-Conversation-ID": conversation_id
         }
     )
@@ -284,8 +285,8 @@ def list_conversations():
 def get_conversation(conversation_id: str):
     conversations = set()
     for item in chat_storage.get_conversations():
-        conversation_id = item["conversation_id"]
-        conversations.add(conversation_id)
+        c_id = item["conversation_id"]
+        conversations.add(c_id)
 
     if conversation_id not in conversations:
         raise HTTPException(
@@ -307,20 +308,12 @@ def get_conversation(conversation_id: str):
         "messages": formatted_messages,
     }
 
-# @app.post("/conversations")
-# def create_conversation():
-#     conversation_id = chat_storage.create_conversation()
-#     return {
-#         "conversation_id": conversation_id,
-#         "messages": [],
-#     }
-
 @app.delete("/conversations/{conversation_id}")
 def delete_conversation(conversation_id: str):
     conversations = set()
     for item in chat_storage.get_conversations():
-        conversation_id = item["conversation_id"]
-        conversations.add(conversation_id)
+        c_id = item["conversation_id"]
+        conversations.add(c_id)
 
     if conversation_id not in conversations:
         raise HTTPException(

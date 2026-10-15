@@ -12,7 +12,7 @@ from llama_index.core.extractors import (
 from llama_index.extractors.entity import EntityExtractor
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from src.promts.promt_extractor import (
+from promts.promt_extractor import (
     TITLE_NODE_PROMT,
     TITLE_COMBINE_PROMT,
     KEYWORD_PROMT,

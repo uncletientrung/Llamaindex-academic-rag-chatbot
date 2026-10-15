@@ -9,7 +9,7 @@ from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import RouterRetriever
 from llama_index.core.tools import RetrieverTool
 from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
-from src.promts.promt_qa import  QA_PROMPT, FALLBACK_PROMPT
+from promts.promt_qa import  QA_PROMPT, FALLBACK_PROMPT
 from constants import (
     ALL_GROUPS,
     SUPPORTED_EXTENSIONS,
@@ -123,10 +123,14 @@ class RAGService:
             if query_engine is None:
                 yield "Chưa có tài liệu nào được tải lên."
                 return
-            
+
+ 
         query_bundle = QueryBundle(query_str=question) # SBERT Rerank cần lấy câu hỏi qua query_bundle.query_str để so sánh với từng đoạn tài liệu và xếp hạng lại.
         # Rerank bằng câu hỏi trước rồi mới dùng retrieval_query
+        
+
         nodes = query_engine.retrieve(query_bundle)
+  
         if not nodes:
             yield from self.fallback_stream(question)
             return
@@ -137,7 +141,7 @@ class RAGService:
             role = 'Người dùng' if message.role.value == 'user' else 'Trợ lý'
             content = message.content or "" 
             history_text += f"{role}: {content}\n"
-            
+
         if history_text:
             retrieval_query = f"""
             Lịch sử hội thoại:
@@ -155,10 +159,8 @@ class RAGService:
         response = query_engine._response_synthesizer.synthesize(
             query=QueryBundle(query_str=retrieval_query),
             nodes=nodes,
-            
-            
         )
-        
+        print("================================= TẠO CÂU HỎI XONG =================================")
         # response = query_engine.query(question)
         for chunk in response.response_gen:
             print(chunk)

@@ -1,7 +1,7 @@
 from llama_index.core import Settings, get_response_synthesizer
 from llama_index.core.response_synthesizers import ResponseMode
 
-from src.promts.promt_qa import QA_PROMPT
+from promts.promt_qa import QA_PROMPT
 
 
 class ResponseSynthesizerFactory:

@@ -10,7 +10,7 @@ Quy tắc bắt buộc:
 4. Chỉ sử dụng thông tin trong ngữ cảnh được cung cấp.
 5. Nếu không đủ thông tin hoặc không có ngữ cảnh truyền vào, hãy nói rõ rằng tài liệu chưa cung cấp đủ thông tin để kết luận.
 
-
+`
 Ngữ cảnh tài liệu:
 ---------------------
 {context_str}
