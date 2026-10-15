@@ -1,31 +1,41 @@
-const chatNavBtn = document.getElementById("chatNavBtn");              
+// ============================================================
+// 1. KHAI BÁO DOM, BIẾN VÀ API
+// ============================================================
+
+// Các phần tử điều hướng và trang
+const chatNavBtn = document.getElementById("chatNavBtn");
 const documentsNavBtn = document.getElementById("documentsNavBtn");
 const chatPage = document.getElementById("chatPage");
 const documentsPage = document.getElementById("documentsPage");
 const pageTitle = document.getElementById("pageTitle");
-const chatSubtitle = document.getElementById("chatSubtitle"); 
-// const filter = document.getElementById("sidebar-section"); 
+const chatSubtitle = document.getElementById("chatSubtitle");
 const mainHeader = document.querySelector(".main-content > .header");
+
+// Các phần tử giao diện Chat
 const questionInput = document.getElementById("questionInput"); // Ô nhập câu hỏi
-const askBtn = document.getElementById("askBtn");       // Nút hỏi
-const chatArea = document.getElementById("chatArea");   // Khung chat
+const askBtn = document.getElementById("askBtn"); // Nút hỏi
+const chatArea = document.getElementById("chatArea"); // Khung chat
 const documentGroupSelect = document.getElementById("documentGroupSelect"); // combobox thư mục
 
+// Các phần tử giao diện quản lý tài liệu
 const groupsList = document.getElementById("documentGroupsList");
 const createGroupBtn = document.getElementById("createGroupBtn");
 const newGroupName = document.getElementById("newGroupName"); // Nút tạo nhóm
 const searchInput = document.getElementById("documentSearchInput"); // Nút tìm nhóm
 let documentGroups = [];
 
+// Các biến quản lý lịch sử chat
 const historyList = document.getElementById("historyList");
 const newChatBtn = document.getElementById("newChatBtn");
 let conversations = [];
 let currentConversationId = null;
 
+// Các phần tử loading
 const mainLoadingOverlay = document.getElementById("mainLoadingOverlay"); // Phần loading
-const mainLoadingTitle =document.getElementById("mainLoadingTitle");
-const mainLoadingMessage =document.getElementById("mainLoadingMessage");
+const mainLoadingTitle = document.getElementById("mainLoadingTitle");
+const mainLoadingMessage = document.getElementById("mainLoadingMessage");
 
+// Các phần tử thông báo
 const toast = document.getElementById("toast");
 const toastMessage = document.getElementById("toastMessage");
 
@@ -37,13 +47,129 @@ const GROUPS_API_URL = "http://127.0.0.1:8000/groups";
 const CONVERSATIONS_API_URL = "http://127.0.0.1:8000/conversations";
 
 
-// Bật/tắt nút gửi theo nội dung ô nhập
-questionInput.addEventListener("input", () => {
-    askBtn.disabled = !questionInput.value.trim();
-});
+// ============================================================
+// 2. CÁC HÀM TIỆN ÍCH VÀ XỬ LÝ GIAO DIỆN CHUNG
+// ============================================================
+
+// Hiển thị loading toàn màn hình
+function showMainLoading(
+    title = "Đang tải dữ liệu",
+    message = "Vui lòng chờ trong giây lát..."
+) {
+    mainLoadingTitle.textContent = title;
+    mainLoadingMessage.textContent = message;
+    mainLoadingOverlay.style.display = "flex";
+}
+
+// Ẩn loading toàn màn hình
+function hideMainLoading() {
+    mainLoadingOverlay.style.display = "none";
+}
+
+// Chống XSS khi hiển thị dữ liệu dạng HTML
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+// Lấy icon tương ứng với đuôi file
+function getFileIcon(filename) {
+    const ext = filename.split(".").pop().toLowerCase();
+
+    if (ext === "pdf") {
+        return { icon: "fa-file-pdf", className: "pdf" };
+    }
+
+    if (ext === "docx") {
+        return { icon: "fa-file-word", className: "docx" };
+    }
+
+    return { icon: "fa-file-alt", className: "txt" };
+}
+
+// Hiển thị thông báo thành công hoặc thất bại
+function showToast(message, type = "error") {
+    const toast = document.getElementById("toast");
+    const toastMessage = document.getElementById("toastMessage");
+
+    toastMessage.textContent = message;
+
+    // Có thể tùy chỉnh màu theo type sau này
+    if (type === "success") {
+        toast.style.background = "#28a745";
+    } else {
+        toast.style.background = "#dc3545"; // error mặc định
+    }
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3500);
+}
+
+// Hiển thị hộp thoại xác nhận và trả về true/false
+function confirmDialog(message) {
+    return new Promise(resolve => {
+        const dialog = document.getElementById("confirmDialog");
+        const msg = document.getElementById("confirmMessage");
+        const confirmBtn = document.getElementById("confirmBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        msg.innerHTML = message;
+        dialog.classList.add("show");
+
+        // Click bên ngoài
+        const handleOutsideClick = event => {
+            if (event.target === dialog) {
+                handleCancel();
+            }
+        };
+
+        // Nhấn Esc
+        const handleEsc = event => {
+            if (event.key === "Escape") {
+                handleCancel();
+            }
+        };
+
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        function cleanup() {
+            dialog.classList.remove("show");
+            confirmBtn.onclick = null;
+            cancelBtn.onclick = null;
+            dialog.onclick = null;
+            document.removeEventListener("keydown", handleEsc);
+        }
+
+        confirmBtn.onclick = handleConfirm;
+        cancelBtn.onclick = handleCancel;
+        dialog.onclick = handleOutsideClick;
+        document.addEventListener("keydown", handleEsc);
+    });
+}
 
 
-function switchPage(page) { 
+// ============================================================
+// 3. CHUYỂN ĐỔI TRANG CHAT / DOCUMENTS
+// ============================================================
+
+// Chuyển đổi giữa trang Chat và trang quản lý tài liệu
+function switchPage(page) {
     const isDocuments = page === "documents";
     const mainContent = document.querySelector(".main-content");
     const sidebarRight = document.querySelector(".sidebar-right");
@@ -65,53 +191,13 @@ function switchPage(page) {
         ?.style.setProperty("display", isDocuments ? "none" : "flex");
 }
 
-chatNavBtn.addEventListener("click", (event) => {       // Chạy sự kiện khi ấn btn Chat
-    event.preventDefault();
-    switchPage("chat");
-});
 
-documentsNavBtn.addEventListener("click", (event) => { // Chạy sự kiện khi ấn btn document
-    event.preventDefault();
-    switchPage("documents");
-});
+// ============================================================
+// 4. QUẢN LÝ NHÓM TÀI LIỆU VÀ HIỂN THỊ DANH SÁCH
+// ============================================================
 
-const initialPage = documentsPage.style.display === "block" ? "documents" : "chat";
-switchPage(initialPage);
-
-/* ===================== Các hàm xử lý giao diện===================== */
-
-function showMainLoading(title = "Đang tải dữ liệu",  message = "Vui lòng chờ trong giây lát...") {
-    mainLoadingTitle.textContent = title;
-    mainLoadingMessage.textContent = message;
-    mainLoadingOverlay.style.display = "flex";
-}
-
-function hideMainLoading() {
-    mainLoadingOverlay.style.display = "none";
-}
-
-function escapeHTML(value) { // Chống xss
-    return String(value).replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    })[char]);
-}
-
-function getFileIcon(filename) { // Lấy icon by đuôi file
-    const ext = filename.split(".").pop().toLowerCase();
-    if (ext === "pdf") {
-        return { icon: "fa-file-pdf", className: "pdf" };
-    }
-    if (ext === "docx") {
-        return { icon: "fa-file-word", className: "docx" };
-    }
-    return { icon: "fa-file-alt", className: "txt" };
-}
-
-function updateDocumentStats() { // Thống kê tổng số tài liệu & số nhóm
+// Cập nhật thống kê tổng số nhóm và số tài liệu
+function updateDocumentStats() {
     document.getElementById("totalGroups").textContent =
         documentGroups.length;
 
@@ -119,90 +205,39 @@ function updateDocumentStats() { // Thống kê tổng số tài liệu & số n
         documentGroups.reduce((sum, group) => sum + group.files.length, 0);
 }
 
-function renderDocumentGroupSelect() { // Hàm cập nhật combobox tài liệu
+// Cập nhật combobox chọn nhóm tài liệu
+function renderDocumentGroupSelect() {
     const selectedGroup = documentGroupSelect.value;
+
     documentGroupSelect.innerHTML = `
         <option value="all">Tất cả tài liệu</option>
     `;
+
     documentGroups.forEach(group => {
         const option = document.createElement("option");
         option.value = group.name;
         option.textContent = group.name;
         documentGroupSelect.appendChild(option);
     });
-    const groupExists = documentGroups.some(group => group.name === selectedGroup);     // Giữ lựa chọn cũ nếu nhóm vẫn còn
+
+    const groupExists = documentGroups.some(
+        group => group.name === selectedGroup
+    ); // Giữ lựa chọn cũ nếu nhóm vẫn còn
+
     documentGroupSelect.value = groupExists ? selectedGroup : "all";
 }
 
-function showToast(message, type = "error") { // Thanh thanh báo bên phải
-    const toast = document.getElementById("toast");
-    const toastMessage = document.getElementById("toastMessage");
-    toastMessage.textContent = message;
-
-    // Có thể tùy chỉnh màu theo type sau này
-    if (type === "success") {
-        toast.style.background = "#28a745";
-    } else {
-        toast.style.background = "#dc3545";   // error mặc định
-    }
-
-    toast.classList.add("show");
-    setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3500);
-}
-
-function confirmDialog(message) { // Dialog confirm trả về T/F
-    return new Promise((resolve) => {
-        const dialog = document.getElementById("confirmDialog");
-        const msg = document.getElementById("confirmMessage");
-        msg.innerHTML = message;
-        dialog.classList.add("show");
-
-        const confirmBtn = document.getElementById("confirmBtn");
-        const cancelBtn = document.getElementById("cancelBtn");
-        const handleConfirm = () => {
-            cleanup();
-            resolve(true);
-        };
-        const handleCancel = () => {
-            cleanup();
-            resolve(false);
-        };
-        // Click bên ngoài
-        const handleOutsideClick = (e) => {
-            if (e.target === dialog) {
-                handleCancel();
-            }
-        };
-        // Nhấn esc
-        const handleEsc = (e) => {
-            if (e.key === "Escape") {
-                handleCancel();
-            }
-        };
-
-        function cleanup() { // Xóa Dialog
-            dialog.classList.remove("show");
-            confirmBtn.removeEventListener("click", handleConfirm);
-            cancelBtn.removeEventListener("click", handleCancel);
-        }
-
-        confirmBtn.addEventListener("click", handleConfirm);
-        cancelBtn.addEventListener("click", handleCancel);
-    });
-}
-
-/* ==========================================
-   Tải danh sách thư mục
-========================================== */
-async function loadDocumentGroups() { // Load document group từ thư mục data
+// Tải danh sách nhóm và các tệp từ backend
+async function loadDocumentGroups() {
     try {
         const response = await fetch(DOCUMENTS_API_URL);
+
         if (!response.ok) {
             throw new Error("Không thể tải danh sách tài liệu.");
         }
+
         const data = await response.json();
+
         documentGroups = data.groups.map(group => ({
             name: group.name,
             files: group.files.map(file => ({
@@ -213,11 +248,15 @@ async function loadDocumentGroups() { // Load document group từ thư mục dat
             })),
             collapsed: false
         }));
-        console.log(documentGroups)
+
+        console.log(documentGroups);
+
         renderDocumentGroups();
         renderDocumentGroupSelect();
+
     } catch (error) {
         console.error("Lỗi tải nhóm tài liệu:", error);
+
         groupsList.innerHTML = `
             <div class="document-empty-state">
                 Không thể tải danh sách tài liệu từ máy chủ.
@@ -226,12 +265,15 @@ async function loadDocumentGroups() { // Load document group từ thư mục dat
     }
 }
 
-
-function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài liệu lên giao diện
+// Hiển thị danh sách nhóm, tệp và các nút thao tác
+function renderDocumentGroups() {
     const keyword = searchInput.value.trim().toLowerCase();
 
     const filteredGroups = documentGroups
-        .map((group, index) => ({ ...group, originalIndex: index }))
+        .map((group, index) => ({
+            ...group,
+            originalIndex: index
+        }))
         .filter(group => group.name.toLowerCase().includes(keyword));
 
     updateDocumentStats();
@@ -249,11 +291,12 @@ function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài li�
     groupsList.innerHTML = filteredGroups.map(group => {
         const index = group.originalIndex;
 
-        const filesHTML = group.files.length    // Danh sách các file trong nhóm tài liệu
+        const filesHTML = group.files.length
             ? group.files.map((file, fileIndex) => {
                 const type = getFileIcon(file.name);
+
                 return `
-                    <div class="document-file-row"> 
+                    <div class="document-file-row">
                         <div class="file-icon ${type.className}">
                             <i class="fas ${type.icon}"></i>
                         </div>
@@ -262,6 +305,7 @@ function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài li�
                             <span class="file-name">
                                 ${escapeHTML(file.name)}
                             </span>
+
                             <span class="file-meta">
                                 ${type.className.toUpperCase()} · Tài liệu demo
                             </span>
@@ -288,7 +332,7 @@ function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài li�
             `;
 
         return `
-            <article class="document-group-card ${group.collapsed ? "collapsed" : ""}"> 
+            <article class="document-group-card ${group.collapsed ? "collapsed" : ""}">
                 <div class="document-group-header">
                     <div class="group-info">
                         <div class="group-folder-icon">
@@ -354,25 +398,27 @@ function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài li�
     }).join("");
 }
 
-
-/* ==========================================
-   TẠO NHÓM
-========================================== */
-createGroupBtn.addEventListener("click", async () => {
+// Tạo nhóm tài liệu mới
+async function createDocumentGroup() {
     const name = newGroupName.value.trim();
+
     if (!name) {
         alert("Vui lòng nhập tên nhóm tài liệu.");
         newGroupName.focus();
         return;
     }
 
-    const exists = documentGroups.some(group => group.name.toLowerCase() === name.toLowerCase());
+    const exists = documentGroups.some(
+        group => group.name.toLowerCase() === name.toLowerCase()
+    );
+
     if (exists) {
         alert("Nhóm tài liệu này đã tồn tại.");
         return;
     }
 
     createGroupBtn.disabled = true;
+
     try {
         const response = await fetch(GROUPS_API_URL, {
             method: "POST",
@@ -381,41 +427,43 @@ createGroupBtn.addEventListener("click", async () => {
             },
             body: JSON.stringify({ name })
         });
+
         const data = await response.json();
+
         if (!response.ok) {
             throw new Error(
                 data.detail || "Không thể tạo nhóm tài liệu."
             );
         }
+
         newGroupName.value = "";
         searchInput.value = "";
+
         await loadDocumentGroups();
+
     } catch (error) {
         console.error("Lỗi tạo nhóm:", error);
         alert("Lỗi: " + error.message);
+
     } finally {
         createGroupBtn.disabled = false;
     }
-});
+}
 
 
-/* ==========================================
-   TÌM KIẾM NHÓM
-========================================== */
+// ============================================================
+// 5. XỬ LÝ UPLOAD, XÓA NHÓM VÀ XÓA TỆP
+// ============================================================
 
-searchInput.addEventListener("input", renderDocumentGroups);
-
-
-/* ==========================================
-   THU GỌN / XÓA NHÓM / XÓA TỆP
-========================================== */
-groupsList.addEventListener("click", async event => { // Lắng nghe sự kiện khi ấn bất kì vào chỗ nào ở groupList
+// Xử lý thu gọn nhóm, xóa nhóm hoặc xóa tệp
+async function handleDocumentGroupClick(event) {
     const button = event.target.closest("[data-action]");
     if (!button) return;
 
     const groupIndex = Number(button.dataset.group); // button.dataset.group LÀ LẤY data-group="0"
     const action = button.dataset.action;
     const group = documentGroups[groupIndex];
+
     if (!group) return;
 
     if (action === "toggle") { // Đóng mở nhóm
@@ -427,40 +475,60 @@ groupsList.addEventListener("click", async event => { // Lắng nghe sự kiện
     if (action === "delete-file") { // Xóa file
         const fileIndex = Number(button.dataset.file); // button.dataset.file LÀ LẤY data-file
         const file = group.files[fileIndex];
+
         if (!file) return;
+
         const ok = await confirmDialog(
             "Bạn có chắc muốn xóa tài liệu này?<br><small>Hành động này không thể hoàn tác.</small>"
         );
+
         if (!ok) return;
 
-        showMainLoading( "Đang xóa tài liệu và cập nhật lại RAG", `Đang xóa ${file.name}`);
+        showMainLoading(
+            "Đang xóa tài liệu và cập nhật lại RAG",
+            `Đang xóa ${file.name}`
+        );
+
         try {
             const formData = new FormData();
             formData.append("group", group.name);
             formData.append("filename", file.name);
-            const response = await fetch("http://127.0.0.1:8000/documents/file",
+
+            const response = await fetch(
+                `${DOCUMENTS_API_URL}/file`,
                 {
                     method: "DELETE",
                     body: formData
                 }
             );
+
             const data = await response.json();
+
             if (!response.ok) {
                 throw new Error(
                     data.detail || "Không thể xóa file."
                 );
             }
-            showToast(`Xóa ${file.name} khỏi thư mục ${group.name} thành công!`, "success") 
+
+            showToast(
+                `Xóa ${file.name} khỏi thư mục ${group.name} thành công!`,
+                "success"
+            );
+
             await loadDocumentGroups();
+
         } catch (error) {
             console.error("Lỗi xóa file:", error);
             alert("Lỗi: " + error.message);
+
         } finally {
             hideMainLoading();
+
             if (button.isConnected) {
                 button.disabled = false;
             }
         }
+
         return;
     }
 
@@ -468,51 +536,75 @@ groupsList.addEventListener("click", async event => { // Lắng nghe sự kiện
         const ok = await confirmDialog(
             "Bạn có chắc muốn xóa tài liệu này?<br><small>Hành động này không thể hoàn tác.</small>"
         );
+
         if (!ok) return;
-        showMainLoading( "Đang xóa nhóm tài liệu và cập nhật lại RAG", `Đang xóa thư mục ${group.name}`);
+
+        showMainLoading(
+            "Đang xóa nhóm tài liệu và cập nhật lại RAG",
+            `Đang xóa thư mục ${group.name}`
+        );
+
         try {
             const response = await fetch(
-                `http://127.0.0.1:8000/groups/${encodeURIComponent(group.name)}`,
+                `${GROUPS_API_URL}/${encodeURIComponent(group.name)}`,
                 { method: "DELETE" }
             );
+
             const data = await response.json();
+
             if (!response.ok) {
                 throw new Error(
                     data.detail || "Không thể xóa nhóm."
                 );
             }
-           showToast(`Xóa thư mục ${group.name} thành công!`, "success") 
+
+            showToast(
+                `Xóa thư mục ${group.name} thành công!`,
+                "success"
+            );
+
             await loadDocumentGroups();
+
         } catch (error) {
             console.error("Lỗi xóa nhóm:", error);
             alert("Lỗi: " + error.message);
+
         } finally {
             hideMainLoading();
+
             if (button.isConnected) {
                 button.disabled = false;
             }
         }
     }
-});
+}
 
-/* ==========================================
-   UPLOAD TÀI LIỆU THẬT
-========================================== */
-groupsList.addEventListener("change", async event => {
+// Upload các tệp được chọn vào nhóm tương ứng
+async function handleDocumentUpload(event) {
     const input = event.target;
+
     if (!input.matches(".document-upload-input")) return; // Không phải input upload tài liệu
+
     const groupIndex = Number(input.dataset.group);
     const group = documentGroups[groupIndex];
+
     if (!group) return;
 
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
+
     const allowedExtensions = ["pdf", "docx", "txt"];
-    showMainLoading( "Đang upload tài liệu và cập nhật lại RAG", `Đang chuẩn bị ${files.length} tệp...`);
+
+    showMainLoading(
+        "Đang upload tài liệu và cập nhật lại RAG",
+        `Đang chuẩn bị ${files.length} tệp...`
+    );
+
     // Upload từng file
     for (const file of files) {
         const extension = file.name.split(".").pop().toLowerCase();
-        if (!allowedExtensions.includes(extension)) {// Kiểm tra định dạng
+
+        if (!allowedExtensions.includes(extension)) { // Kiểm tra định dạng
             alert(`File "${file.name}" không được hỗ trợ.`);
             continue;
         }
@@ -521,6 +613,7 @@ groupsList.addEventListener("change", async event => {
             const formData = new FormData();
             formData.append("file", file);
             formData.append("group", group.name); // Gửi tên nhóm lên backend
+
             const response = await fetch( //Gửi file lên FastAPI
                 UPLOAD_API_URL,
                 {
@@ -530,31 +623,34 @@ groupsList.addEventListener("change", async event => {
             );
 
             const data = await response.json();
+
             if (!response.ok) {
                 throw new Error(
                     data.detail || "Upload thất bại."
                 );
             }
-            showToast(`Upload thành công ${file.name}!`, "success") 
+
+            showToast(`Upload thành công ${file.name}!`, "success");
+
         } catch (error) {
-            console.error( `Lỗi upload ${file.name}:`,error);
-            alert(`Không thể upload "${file.name}": ${error.message}` ); 
+            console.error(`Lỗi upload ${file.name}:`, error);
+            alert(`Không thể upload "${file.name}": ${error.message}`);
         }
     }
 
     // Xóa giá trị input để có thể chọn lại cùng file
     input.value = "";
+
     hideMainLoading();
+
     // Render lại giao diện
     await loadDocumentGroups();
-});
+}
 
 
-/* Render dữ liệu mẫu ban đầu */
-loadDocumentGroups();
-
-///////////////////////////////////////////////////////////////////
-
+// ============================================================
+// 6. QUẢN LÝ LỊCH SỬ VÀ NỘI DUNG CUỘC TRÒ CHUYỆN
+// ============================================================
 
 // Tạo tin nhắn và hiển thị lên giao diện
 function appendMessage(content, role) {
@@ -586,15 +682,19 @@ function appendMessage(content, role) {
 async function loadConversations() {
     try {
         const response = await fetch(CONVERSATIONS_API_URL);
+
         if (!response.ok) {
             throw new Error("Không thể tải lịch sử chat.");
         }
 
         const data = await response.json();
         conversations = data.conversations || [];
+
         renderHistory();
+
     } catch (error) {
         console.error("Lỗi tải lịch sử chat:", error);
+
         historyList.innerHTML = `
             <p class="history-empty">
                 Không thể tải lịch sử trò chuyện.
@@ -603,7 +703,7 @@ async function loadConversations() {
     }
 }
 
-// Hiển thị title trong sidebar bên phải
+// Hiển thị danh sách cuộc trò chuyện ở sidebar bên phải
 function renderHistory() {
     historyList.innerHTML = "";
 
@@ -620,10 +720,13 @@ function renderHistory() {
     [...conversations].reverse().forEach(conversation => {
         const item = document.createElement("div");
         item.className = "history-item";
-        if ( conversation.conversation_id === currentConversationId){
+
+        if (conversation.conversation_id === currentConversationId) {
             item.classList.add("active");
         }
+
         const title = conversation.title?.trim() || "Cuộc trò chuyện mới";
+
         item.dataset.conversationId = conversation.conversation_id;
 
         item.innerHTML = `
@@ -644,29 +747,40 @@ function renderHistory() {
             </div>
         `;
 
-        item.querySelector(".history-title").textContent = title.length > 25 ? title.substring(0, 25) + "..." : title;    
+        item.querySelector(".history-title").textContent =
+            title.length > 25
+                ? title.substring(0, 25) + "..."
+                : title;
+
         historyList.appendChild(item);
     });
 }
 
-// Tải toàn bộ message của một cuộc trò chuyện
+// Tải toàn bộ tin nhắn của một cuộc trò chuyện
 async function loadConversation_Messages(conversationId) {
-    
     try {
-        showMainLoading( "Đang tải cuộc trò chuyện", "Đang tải lại lịch sử tin nhắn...");
-        const response = await fetch(
-            `${CONVERSATIONS_API_URL}/${conversationId}`
+        showMainLoading(
+            "Đang tải cuộc trò chuyện",
+            "Đang tải lại lịch sử tin nhắn..."
         );
+
+        const response = await fetch(
+            `${CONVERSATIONS_API_URL}/${encodeURIComponent(conversationId)}`
+        );
+
         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
+
             throw new Error(
                 data.detail || "Không thể tải cuộc trò chuyện."
             );
         }
 
         const data = await response.json();
+
         currentConversationId = data.conversation_id; // Đặt lại id đoạn chat
         chatArea.innerHTML = "";
+
         // Hiển thị lại toàn bộ message
         for (const message of data.messages || []) {
             appendMessage(
@@ -681,19 +795,131 @@ async function loadConversation_Messages(conversationId) {
 
     } catch (error) {
         console.error("Lỗi tải cuộc trò chuyện:", error);
+
         showToast(
             "Không thể tải lịch sử trò chuyện: " + error.message,
             "error"
         );
+
     } finally {
         hideMainLoading();
         questionInput.focus();
     }
 }
 
-// Gửi câu hỏi lên FastAPI
+// Xóa cuộc trò chuyện hiện tại và bắt đầu phiên mới
+function startNewChat() {
+    currentConversationId = null;
+    chatArea.innerHTML = ""; // Xóa nội dung chat hiện tại
+
+    // Reset ô nhập câu hỏi
+    questionInput.value = "";
+    questionInput.disabled = false;
+    askBtn.disabled = true;
+
+    documentGroupSelect.disabled = false; // Cho phép chọn nhóm tài liệu
+
+    // Cập nhật trạng thái active trên sidebar
+    renderHistory();
+    questionInput.focus();
+}
+
+// Xử lý thao tác click vào lịch sử chat: mở hoặc xóa hội thoại
+async function handleHistoryClick(event) {
+    // XÓA CUỘC TRÒ CHUYỆN
+    const deleteButton = event.target.closest(
+        '[data-action="delete-conversation"]'
+    );
+
+    if (deleteButton) {
+        event.stopPropagation();
+
+        const historyItem = deleteButton.closest(".history-item");
+        if (!historyItem) return;
+
+        const conversationId = historyItem.dataset.conversationId;
+
+        const conversation = conversations.find(
+            item => String(item.conversation_id) === String(conversationId)
+        );
+
+        const title = conversation?.title?.trim() || "Cuộc trò chuyện này";
+
+        const ok = await confirmDialog(
+            `Bạn có chắc muốn xóa cuộc trò chuyện "<strong>${escapeHTML(title)}</strong>"?<br>
+             <small>Toàn bộ tin nhắn trong cuộc trò chuyện sẽ bị xóa.</small>`
+        );
+
+        if (!ok) return;
+
+        try {
+            const response = await fetch(
+                `${CONVERSATIONS_API_URL}/${encodeURIComponent(conversationId)}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Không thể xóa cuộc trò chuyện."
+                );
+            }
+
+            // Nếu đang xóa conversation hiện tại
+            if (String(currentConversationId) === String(conversationId)) {
+                currentConversationId = null;
+                chatArea.innerHTML = "";
+            }
+
+            showToast(
+                "Đã xóa cuộc trò chuyện.",
+                "success"
+            );
+
+            // Tải lại danh sách history
+            await loadConversations();
+
+        } catch (error) {
+            console.error("Lỗi xóa cuộc trò chuyện:", error);
+
+            showToast(
+                "Không thể xóa cuộc trò chuyện: " + error.message,
+                "error"
+            );
+        }
+
+        return;
+    }
+
+    // CLICK VÀO CUỘC TRÒ CHUYỆN
+    const historyItem = event.target.closest(".history-item");
+
+    if (!historyItem) return;
+
+    const conversationId = historyItem.dataset.conversationId;
+
+    if (!conversationId) return;
+
+    // Nếu click lại conversation đang mở thì không cần tải lại
+    if (String(conversationId) === String(currentConversationId)) {
+        return;
+    }
+
+    await loadConversation_Messages(conversationId);
+}
+
+
+// ============================================================
+// 7. GỬI CÂU HỎI VÀ XỬ LÝ PHẢN HỒI STREAMING
+// ============================================================
+
+// Gửi câu hỏi lên FastAPI và hiển thị câu trả lời theo luồng streaming
 async function sendQuestion() {
     const question = questionInput.value.trim();
+
     if (!question || askBtn.disabled) return;
 
     const selectedGroup = documentGroupSelect.value || "all";
@@ -710,8 +936,9 @@ async function sendQuestion() {
         "Đang tìm kiếm tài liệu và tạo câu trả lời...",
         "assistant"
     );
+
     const messageContent = loadingMessage.querySelector(".message-content");
-        
+
     try {
         const response = await fetch(API_URL, {
             method: "POST",
@@ -727,13 +954,15 @@ async function sendQuestion() {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+
             throw new Error(
                 errorData.detail || "Không thể xử lý câu hỏi."
             );
         }
-        
+
         // Backend trả ID qua header X-Conversation-ID
         const conversationId = response.headers.get("X-Conversation-ID");
+
         if (conversationId) {
             currentConversationId = conversationId;
             renderHistory();
@@ -741,14 +970,17 @@ async function sendQuestion() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
+
         let isFirstChunk = true; // Dùng để kiểm tra đã có chunk đầu tiên chưa để xóa chữ đang tìm của Assistant
         let buffer = "";
-        const STREAM_DELAY = 10; // Thời gian nghỉ giữa các lần hiển thị 
+        const STREAM_DELAY = 10; // Thời gian nghỉ giữa các lần hiển thị
         const CHARS_PER_STEP = 5; // Số ký tự hiển thị mỗi lần
 
         while (true) {
             const { value, done } = await reader.read();
+
             if (done) break; // Nếu stream đã kết thúc thì thoát vòng lặp
+
             // messageContent.textContent += decoder.decode(value, { stream: true});
             buffer += decoder.decode(value, {
                 stream: true
@@ -762,21 +994,25 @@ async function sendQuestion() {
             while (buffer.length > 0) {
                 const chunk = buffer.slice(0, CHARS_PER_STEP);
                 buffer = buffer.slice(CHARS_PER_STEP);
-                messageContent.textContent += chunk;
-                await new Promise(resolve => setTimeout(resolve, STREAM_DELAY));
 
+                messageContent.textContent += chunk;
+
+                await new Promise(resolve => setTimeout(resolve, STREAM_DELAY));
             }
         }
 
         // Giải mã phần dữ liệu còn lại
         // messageContent.textContent += decoder.decode();
         const remainingText = decoder.decode();
+
         if (remainingText) {
             if (isFirstChunk) {
                 messageContent.textContent = "";
             }
+
             messageContent.textContent += remainingText;
         }
+
         await loadConversations();
 
     } catch (error) {
@@ -784,6 +1020,7 @@ async function sendQuestion() {
             "Lỗi: " + error.message;
 
         console.error("Lỗi gọi FastAPI:", error);
+
     } finally {
         questionInput.disabled = false;
         documentGroupSelect.disabled = false;
@@ -792,23 +1029,43 @@ async function sendQuestion() {
     }
 }
 
-newChatBtn.addEventListener("click", () => {
-    currentConversationId = null;
-    chatArea.innerHTML = ""; // Xóa nội dung chat hiện tại
 
-    // Reset ô nhập câu hỏi
-    questionInput.value = "";
-    questionInput.disabled = false;
-    askBtn.disabled = true;
+// ============================================================
+// 8. ĐĂNG KÝ TẤT CẢ SỰ KIỆN ADD EVENT LISTENER
+// ============================================================
 
-    documentGroupSelect.disabled = false; // Cho phép chọn nhóm tài liệu
-
-    // Cập nhật trạng thái active trên sidebar
-    renderHistory();
-    questionInput.focus();
+// Sự kiện nhập câu hỏi và bật/tắt nút gửi
+questionInput.addEventListener("input", () => {
+    askBtn.disabled = !questionInput.value.trim();
 });
 
-// Nhấn nút Gửi
+// Sự kiện chuyển đổi trang Chat / Documents
+chatNavBtn.addEventListener("click", event => {
+    event.preventDefault();
+    switchPage("chat");
+});
+
+documentsNavBtn.addEventListener("click", event => {
+    event.preventDefault();
+    switchPage("documents");
+});
+
+// Sự kiện tạo nhóm tài liệu
+createGroupBtn.addEventListener("click", createDocumentGroup);
+
+// Sự kiện tìm kiếm nhóm tài liệu
+searchInput.addEventListener("input", renderDocumentGroups);
+
+// Sự kiện thu gọn nhóm, xóa nhóm và xóa tệp
+groupsList.addEventListener("click", handleDocumentGroupClick);
+
+// Sự kiện upload tài liệu
+groupsList.addEventListener("change", handleDocumentUpload);
+
+// Sự kiện bắt đầu cuộc trò chuyện mới
+newChatBtn.addEventListener("click", startNewChat);
+
+// Sự kiện gửi câu hỏi
 askBtn.addEventListener("click", sendQuestion);
 
 // Nhấn Enter để gửi câu hỏi
@@ -822,88 +1079,22 @@ questionInput.addEventListener("keydown", event => {
     }
 });
 
-loadConversations();
-
 // Xử lý click vào lịch sử chat
-historyList.addEventListener("click", async event => {
-    // ============================
-    // XÓA CUỘC TRÒ CHUYỆN
-    // ============================
-    const deleteButton = event.target.closest('[data-action="delete-conversation"]');
-    if (deleteButton) {
-        event.stopPropagation();
-        const historyItem = deleteButton.closest(".history-item");
-        if (!historyItem) return;
-
-        const conversationId = historyItem.dataset.conversationId;
-
-        const conversation = conversations.find(
-            item => item.conversation_id === conversationId
-        );
-
-        const title = conversation?.title?.trim() || "Cuộc trò chuyện này";
-        const ok = await confirmDialog(
-            `Bạn có chắc muốn xóa cuộc trò chuyện "<strong>${escapeHTML(title)}</strong>"?<br>
-             <small>Toàn bộ tin nhắn trong cuộc trò chuyện sẽ bị xóa.</small>`
-        );
-
-        if (!ok) return;
-        try {
-            const response = await fetch(
-                `${CONVERSATIONS_API_URL}/${encodeURIComponent(conversationId)}`,
-                {
-                    method: "DELETE"
-                }
-            );
-
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(
-                    data.detail || "Không thể xóa cuộc trò chuyện."
-                );
-            }
-
-            // Nếu đang xóa conversation hiện tại
-            if (currentConversationId === conversationId) {
-                currentConversationId = null;
-                chatArea.innerHTML = "";
-            }
-
-            showToast(
-                "Đã xóa cuộc trò chuyện.",
-                "success"
-            );
-
-            // Tải lại danh sách history
-            await loadConversations();
-
-        } catch (error) {
-            console.error("Lỗi xóa cuộc trò chuyện:", error);
-            showToast(
-                "Không thể xóa cuộc trò chuyện: " + error.message,
-                "error"
-            );
-        }
-
-        return;
-    }
+historyList.addEventListener("click", handleHistoryClick);
 
 
-    // ============================
-    // CLICK VÀO CUỘC TRÒ CHUYỆN
-    // ============================
-    const historyItem = event.target.closest(".history-item");
-    
-    
-    if (!historyItem) return;
-    const conversationId = historyItem.dataset.conversationId;
+// ============================================================
+// 9. KHỞI TẠO VÀ TẢI DỮ LIỆU BAN ĐẦU
+// ============================================================
 
-    if (!conversationId) return;
+// Khởi tạo trang mặc định
+const initialPage =
+    documentsPage.style.display === "block" ? "documents" : "chat";
 
-    // Nếu click lại conversation đang mở thì không cần tải lại
-    if (conversationId === currentConversationId) {
-        return;
-    }
+switchPage(initialPage);
 
-    await loadConversation_Messages(conversationId);
-});
+// Tải danh sách nhóm tài liệu ban đầu
+loadDocumentGroups();
+
+// Tải lịch sử cuộc trò chuyện ban đầu
+loadConversations();
