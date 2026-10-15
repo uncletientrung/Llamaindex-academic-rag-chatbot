@@ -106,7 +106,7 @@ class RAGService:
         response = query_engine.query(question)
         return str(response)
 
-    def ask_stream(self, question: str, group: str = ALL_GROUPS):
+    def ask_stream(self, question: str, group: str = ALL_GROUPS, history: list | None = None,):
         question = question.strip()
         if not question:
             yield "Vui lòng nhập câu hỏi."
@@ -123,16 +123,40 @@ class RAGService:
             if query_engine is None:
                 yield "Chưa có tài liệu nào được tải lên."
                 return
-
+            
         query_bundle = QueryBundle(query_str=question) # SBERT Rerank cần lấy câu hỏi qua query_bundle.query_str để so sánh với từng đoạn tài liệu và xếp hạng lại.
+        # Rerank bằng câu hỏi trước rồi mới dùng retrieval_query
         nodes = query_engine.retrieve(query_bundle)
         if not nodes:
             yield from self.fallback_stream(question)
             return
 
+        recent_history = (history or [])[-10:] # Lấy 10 cuộc hội thoại gần nhất
+        history_text = ""
+        for message in recent_history:
+            role = 'Người dùng' if message.role.value == 'user' else 'Trợ lý'
+            content = message.content or "" 
+            history_text += f"{role}: {content}\n"
+            
+        if history_text:
+            retrieval_query = f"""
+            Lịch sử hội thoại:
+            ---------------------
+            {history_text}
+            ---------------------
+            Câu hỏi: 
+            ---------------------
+            {question}
+            ---------------------
+            """
+        else:
+            retrieval_query = question
+
         response = query_engine._response_synthesizer.synthesize(
-            query=query_bundle,
+            query=QueryBundle(query_str=retrieval_query),
             nodes=nodes,
+            
+            
         )
         
         # response = query_engine.query(question)

@@ -64,7 +64,7 @@ class DocumentIngestionPipeline:
     def load_documents(self, folder: Path): # Load các doc từ file
         files = self.get_files(folder)
         if not files:
-            print(f"Bỏ qua thư mục không có file hợp lệ: {folder.name}")
+            print(f"Bỏ qua thư mục không có file: {folder.name}")
             return []
         
         reader = SimpleDirectoryReader(
@@ -112,28 +112,6 @@ class DocumentIngestionPipeline:
         )
         return storage
 
-    def build_indexes(self) -> dict[str, VectorStoreIndex]: # Hàm build các index
-        self.indices = {}
-        for folder in self.get_subfolders():
-            print(f"Đang xử lý thư mục: {folder.name}")
-            documents = self.load_documents(folder)
-            if not documents:
-                print(f"Bỏ qua thư mục rỗng: {folder.name}")
-                continue
-
-            nodes = self.get_nodes(documents)
-            if not nodes:
-                print(f"Không tạo được nodes: {folder.name}")
-                continue
-                        
-            storage_context = self.get_storage()
-            index = VectorStoreIndex(nodes= nodes, storage_context= storage_context)
-            self.indices[folder.name] = index
-            print(
-                f"Đã tạo index: {folder.name} "
-                f"({len(documents)} document, {len(nodes)} nodes)"
-            )
-        return self.indices
     
     def build_indexes(self, rebuild_groups: set[str] | None = None,) -> dict[str, VectorStoreIndex]:
         self.indices = {}
@@ -144,9 +122,9 @@ class DocumentIngestionPipeline:
         current_groups = {folder.name for folder in folders}
 
         # Xóa storage của những nhóm tài liệu đã bị xóa
-        for saved_dir in self.storage_dir.iterdir(): # Lấy các folder và file đã lưu vào storage
-            if saved_dir.is_dir() and saved_dir.name not in current_groups:
-                shutil.rmtree(saved_dir)
+        for saved_storage_dir in self.storage_dir.iterdir(): # Lấy các folder và file đã lưu vào storage
+            if saved_storage_dir.is_dir() and saved_storage_dir.name not in current_groups:
+                shutil.rmtree(saved_storage_dir)
 
         for folder in folders:
             group_name = folder.name
@@ -159,7 +137,7 @@ class DocumentIngestionPipeline:
                     storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir) )
                     index = load_index_from_storage(storage_context)
                     self.indices[group_name] = index
-                    print(f"Đã load index từ storage: {group_name}")
+                    print(f"Đã load lại index từ storage: {group_name}")
                     continue
 
                 except Exception as ex:

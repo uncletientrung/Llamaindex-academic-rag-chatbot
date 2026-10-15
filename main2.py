@@ -4,9 +4,11 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
+from typing import Optional
 import shutil
 
 from test import RAGService
+from chathistory import ChatHistoryStore
 from constants import (
     ALL_GROUPS,
     SUPPORTED_EXTENSIONS,
@@ -16,6 +18,7 @@ app = FastAPI(title="Academic RAG API")
 DATA_DIR = Path("data").resolve()
 DATA_DIR.mkdir(exist_ok=True)
 rag_engine = RAGService()
+chat_storage = ChatHistoryStore(path="storage/chat_store.json")
 
 
 # Cho phép frontend đang chạy bằng Live Server gọi API
@@ -30,6 +33,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Conversation-ID"],
 )
 
 
@@ -37,6 +41,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     question: str
     group: str = "all"
+    conversation_id: Optional[str] = None # Optional[str] là có thể là chuỗi hoặc None
 
 # Định dạng dữ liệu trả về frontend
 class ChatResponse(BaseModel):
@@ -88,9 +93,39 @@ def chat(request: ChatRequest):
             detail="Vui lòng nhập câu hỏi."
         )
     
+    conversation_id = request.conversation_id # Lấy lịch sử cuộc hội thoại hoặc tạo uuid mới
+    if conversation_id is None:
+        conversation_id = chat_storage.create_conversation()
+    else:
+        conversations = chat_storage.get_conversations()
+        conversation_ids = set()
+        for conversation in conversations:
+            conversation_ids.add(conversation["conversation_id"])
+
+        if conversation_id not in conversation_ids:
+            raise HTTPException(
+                status_code=404,
+                detail="Không tìm thấy cuộc trò chuyện.",
+            )
+
+    history = chat_storage.get_messages(conversation_id)
+    chat_storage.add_message(conversation_id,"user",question) # Lưu câu hỏi vào chatStorage 
+    
+    def generate_response(): # Hàm trong hàm
+            full_response = ""
+            for chunk in rag_engine.ask_stream(question,group, history):
+                full_response += chunk
+                yield chunk # Giá trị trả về liên tục
+                
+            if full_response:
+                chat_storage.add_message(conversation_id, "assistant",full_response)
+                        
     return StreamingResponse(
-        rag_engine.ask_stream(question, group),
+        generate_response(),
         media_type="text/plain; charset=utf-8",
+        headers={
+            "X-Conversation-ID": conversation_id
+        }
     )
 
 @app.post("/groups")
@@ -237,3 +272,61 @@ def delete_group(name: str): # Xóa thư mục
         "message": "Đã xóa nhóm và cập nhật RAG.",
         "name": name
     }
+
+
+@app.get("/conversations")
+def list_conversations():
+    return {
+        "conversations": chat_storage.get_conversations()
+    }
+
+@app.get("/conversations/{conversation_id}")
+def get_conversation(conversation_id: str):
+    conversations = set()
+    for item in chat_storage.get_conversations():
+        conversation_id = item["conversation_id"]
+        conversations.add(conversation_id)
+
+    if conversation_id not in conversations:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy cuộc trò chuyện.",
+        )
+
+    messages = chat_storage.get_messages(conversation_id)
+    formatted_messages = []
+    for message in messages: # Chat message có dạng ChatMessage(role=MessageRole.USER, content="Xin chào"),
+        formatted_message = {
+            "role": message.role.value,
+            "content": message.content,
+        }
+        formatted_messages.append(formatted_message)
+
+    return {
+        "conversation_id": conversation_id,
+        "messages": formatted_messages,
+    }
+
+# @app.post("/conversations")
+# def create_conversation():
+#     conversation_id = chat_storage.create_conversation()
+#     return {
+#         "conversation_id": conversation_id,
+#         "messages": [],
+#     }
+
+@app.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str):
+    conversations = set()
+    for item in chat_storage.get_conversations():
+        conversation_id = item["conversation_id"]
+        conversations.add(conversation_id)
+
+    if conversation_id not in conversations:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy cuộc trò chuyện.",
+        )
+
+    chat_storage.delete_conversation(conversation_id)
+    return {"message": "Đã xóa cuộc trò chuyện."}

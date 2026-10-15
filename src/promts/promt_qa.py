@@ -9,14 +9,14 @@ Quy tắc bắt buộc:
 3. Giữ nguyên các thuật ngữ chuyên ngành cần thiết, nhưng giải thích bằng tiếng Việt.
 4. Chỉ sử dụng thông tin trong ngữ cảnh được cung cấp.
 5. Nếu không đủ thông tin hoặc không có ngữ cảnh truyền vào, hãy nói rõ rằng tài liệu chưa cung cấp đủ thông tin để kết luận.
-   
+
 
 Ngữ cảnh tài liệu:
 ---------------------
 {context_str}
 ---------------------
 
-Câu hỏi: {query_str}
+{query_str}
 
 Câu trả lời bằng tiếng Việt:
 """

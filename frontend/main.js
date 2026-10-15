@@ -17,6 +17,11 @@ const newGroupName = document.getElementById("newGroupName"); // Nút tạo nhó
 const searchInput = document.getElementById("documentSearchInput"); // Nút tìm nhóm
 let documentGroups = [];
 
+const historyList = document.getElementById("historyList");
+const newChatBtn = document.getElementById("newChatBtn");
+let conversations = [];
+let currentConversationId = null;
+
 const mainLoadingOverlay = document.getElementById("mainLoadingOverlay"); // Phần loading
 const mainLoadingTitle =document.getElementById("mainLoadingTitle");
 const mainLoadingMessage =document.getElementById("mainLoadingMessage");
@@ -29,9 +34,7 @@ const API_URL = "http://127.0.0.1:8000/chat";
 const UPLOAD_API_URL = "http://127.0.0.1:8000/upload";
 const DOCUMENTS_API_URL = "http://127.0.0.1:8000/documents";
 const GROUPS_API_URL = "http://127.0.0.1:8000/groups";
-
-
-
+const CONVERSATIONS_API_URL = "http://127.0.0.1:8000/conversations";
 
 
 // Bật/tắt nút gửi theo nội dung ô nhập
@@ -225,7 +228,6 @@ async function loadDocumentGroups() { // Load document group từ thư mục dat
 
 
 function renderDocumentGroups() { // Hiển thị danh sách các nhóm tài liệu lên giao diện
-    console.log(documentGroups)
     const keyword = searchInput.value.trim().toLowerCase();
 
     const filteredGroups = documentGroups
@@ -580,6 +582,69 @@ function appendMessage(content, role) {
     return message;
 }
 
+// Lấy danh sách cuộc trò chuyện từ FastAPI
+async function loadConversations() {
+    try {
+        const response = await fetch(CONVERSATIONS_API_URL);
+        if (!response.ok) {
+            throw new Error("Không thể tải lịch sử chat.");
+        }
+
+        const data = await response.json();
+        conversations = data.conversations || [];
+        renderHistory();
+    } catch (error) {
+        console.error("Lỗi tải lịch sử chat:", error);
+        historyList.innerHTML = `
+            <p class="history-empty">
+                Không thể tải lịch sử trò chuyện.
+            </p>
+        `;
+    }
+}
+
+// Hiển thị title trong sidebar bên phải
+function renderHistory() {
+    historyList.innerHTML = "";
+
+    if (conversations.length === 0) {
+        historyList.innerHTML = `
+            <p class="history-empty">
+                Chưa có lịch sử trò chuyện
+            </p>
+        `;
+        return;
+    }
+
+    // Cuộc trò chuyện mới nhất hiển thị phía trên
+    [...conversations].reverse().forEach(conversation => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        if ( conversation.conversation_id === currentConversationId){
+            item.classList.add("active");
+        }
+
+        const title = conversation.title?.trim() || "Cuộc trò chuyện mới";
+        item.innerHTML = `
+            <div class="history-content">
+                <i class="fas fa-comments"></i>
+
+                <div class="history-text">
+                    <div class="history-title"></div>
+                </div>
+            </div>
+        `;
+
+        // Dùng textContent để tránh chèn HTML từ title
+        item.querySelector(".history-title").textContent =
+            title.length > 25
+                ? title.substring(0, 25) + "..."
+                : title;
+
+        historyList.appendChild(item);
+    });
+}
+
 // Gửi câu hỏi lên FastAPI
 async function sendQuestion() {
     const question = questionInput.value.trim();
@@ -601,8 +666,9 @@ async function sendQuestion() {
     );
     const messageContent = loadingMessage.querySelector(".message-content");
         
-
     try {
+        console.log(currentConversationId);
+        
         const response = await fetch(API_URL, {
             method: "POST",
             headers: {
@@ -610,23 +676,28 @@ async function sendQuestion() {
             },
             body: JSON.stringify({
                 question: question,
-                group: selectedGroup
+                group: selectedGroup,
+                conversation_id: currentConversationId
             })
         });
 
         if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
             throw new Error(
-                data.detail || "Không thể xử lý câu hỏi."
+                errorData.detail || "Không thể xử lý câu hỏi."
             );
         }
-        // BƯỚC 7: Kiểm tra khả năng đọc stream
-        if (!response.body) {
-            throw new Error(
-                "Trình duyệt không hỗ trợ đọc stream."
-            );
+
+        // Backend trả ID qua header X-Conversation-ID
+        const conversationId = response.headers.get("X-Conversation-ID");
+        if (conversationId) {
+            currentConversationId = conversationId;
+            console.log(conversationId);
+            
+            renderHistory();
         }
+
         const reader = response.body.getReader();
-        console.log(reader);
         const decoder = new TextDecoder("utf-8");
         let isFirstChunk = true; // Dùng để kiểm tra đã có chunk đầu tiên chưa để xóa chữ đang tìm của Assistant
         let buffer = "";
@@ -664,7 +735,7 @@ async function sendQuestion() {
             }
             messageContent.textContent += remainingText;
         }
-
+        // await loadConversations();
 
     } catch (error) {
         loadingMessage.querySelector(".message-content").textContent =
@@ -679,6 +750,22 @@ async function sendQuestion() {
     }
 }
 
+newChatBtn.addEventListener("click", () => {
+    currentConversationId = null;
+    chatArea.innerHTML = ""; // Xóa nội dung chat hiện tại
+
+    // Reset ô nhập câu hỏi
+    questionInput.value = "";
+    questionInput.disabled = false;
+    askBtn.disabled = true;
+
+    documentGroupSelect.disabled = false; // Cho phép chọn nhóm tài liệu
+
+    // Cập nhật trạng thái active trên sidebar
+    renderHistory();
+    questionInput.focus();
+});
+
 // Nhấn nút Gửi
 askBtn.addEventListener("click", sendQuestion);
 
@@ -692,3 +779,5 @@ questionInput.addEventListener("keydown", event => {
         }
     }
 });
+
+// loadConversations();
