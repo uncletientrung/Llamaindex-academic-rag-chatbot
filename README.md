@@ -13,7 +13,7 @@ Retrieval
     ↓
 Relevant Nodes
     ↓
-Response Synthesis
+Response Synthesi
     ↓
 LLM
     ↓
