@@ -15,12 +15,12 @@ class NodePostprocessorFactory:
 
     def build(self) -> list:
         return [
-            DebugNodePostprocessor(),
+            # DebugNodePostprocessor(),
             SimilarityPostprocessor(
                 similarity_cutoff=self.similarity_cutoff
             ),
             self.reranker,
-            DebugNodePostprocessor()
+            # DebugNodePostprocessor()
         ]
 
 
