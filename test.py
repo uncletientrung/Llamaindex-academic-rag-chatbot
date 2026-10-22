@@ -85,27 +85,6 @@ class RAGService:
 
             self.router_query_engine = self.build_query_engine(self.router_retriever) # bỏ vào router query
 
-            
-    def ask(self, question: str, group: str = ALL_GROUPS) -> str: # ĐANG KHÔNG DÙNG
-        question = question.strip()
-        if not question:
-            return "Vui lòng nhập câu hỏi."
-
-        # Chế độ chọn 1 nhóm riêng
-        if group != ALL_GROUPS:
-            query_engine = self.query_engines.get(group)
-            if query_engine is None:
-                return f"Không tìm thấy index cho nhóm '{group}'."
-
-         # Chế độ tất cả folder
-        else:
-            query_engine = self.router_query_engine
-            if query_engine is None:
-                return "Chưa có tài liệu nào được tải lên."
-
-        response = query_engine.query(question)
-        return str(response)
-
     def ask_stream(self, question: str, group: str = ALL_GROUPS, history: list | None = None,):
         question = question.strip()
         if not question:
@@ -191,3 +170,49 @@ class RAGService:
 
         self.rebuild_index(rebuild_groups={group_dir.name})
 
+
+    # Các hàm sử dụng để đánh giá
+    
+    def answer_with_context(self,question: str,group: str = ALL_GROUPS,):
+        question = question.strip()
+
+        if not question:
+            raise ValueError("Câu hỏi không được để trống.")
+
+        if group != ALL_GROUPS:
+            query_engine = self.query_engines.get(group)
+            if query_engine is None:
+                raise ValueError(f"Không tìm thấy index cho nhóm '{group}'.")
+        else:
+            query_engine = self.router_query_engine
+            if query_engine is None:
+                raise ValueError("Chưa có tài liệu nào được tải lên.")
+
+        # Truy xuất context qua toàn bộ retriever và postprocessor
+        nodes = query_engine.retrieve(
+            QueryBundle(query_str=question)
+        )
+
+        if not nodes:
+            return {
+                "query": question,
+                "contexts": [],
+                "response": "",
+            }
+
+        contexts = [
+            node.node.get_content()
+            for node in nodes
+        ]
+
+        # Sinh câu trả lời dựa trên chính các node đã truy xuất
+        response = query_engine._response_synthesizer.synthesize(
+            query=QueryBundle(query_str=question),
+            nodes=nodes,
+        )
+
+        return {
+            "query": question,
+            "contexts": contexts,
+            "response": str(response),
+        }
