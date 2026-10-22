@@ -1,727 +1,137 @@
-# Tìm hiểu LlamaIndex và xây dựng chatbot RAG hỗ trợ tra cứu quy định học vụ từ tài liệu nội bộ
+# Academic RAG Chatbot
 
-## 1. Giới thiệu
+Đồ án xây dựng chatbot hỏi đáp trên tài liệu tiếng Việt bằng **LlamaIndex**. Người dùng có thể quản lý tài liệu theo nhóm, đặt câu hỏi trên một nhóm hoặc trên tất cả tài liệu, và xem lại các cuộc trò chuyện.
 
-Đây là đồ án môn học với mục tiêu **tìm hiểu LlamaIndex và ứng dụng LlamaIndex để xây dựng hệ thống RAG (Retrieval-Augmented Generation)** hỗ trợ tra cứu thông tin từ các tài liệu quy định học vụ nội bộ.
+> Kho dữ liệu mẫu trong `data/` hiện gồm một số văn bản pháp luật. Có thể thay hoặc bổ sung tài liệu theo nhu cầu.
 
-Hệ thống cho phép người dùng đặt câu hỏi bằng ngôn ngữ tự nhiên, sau đó hệ thống thực hiện quá trình:
+## Chức năng
 
-```text
-User Query
-    ↓
-Retrieval
-    ↓
-Relevant Nodes
-    ↓
-Response Synthesi
-    ↓
-LLM
-    ↓
-Final Answer
-```
+- Đọc tài liệu PDF, DOCX và TXT theo từng thư mục nhóm.
+- Chia văn bản thành các đoạn, tạo embedding và lưu index trên đĩa.
+- Tìm kiếm vector, lọc các kết quả theo độ tương đồng và xếp hạng lại bằng reranker.
+- Dùng LLM để chọn nhóm tài liệu khi truy vấn trên tất cả nhóm và tạo câu trả lời theo ngữ cảnh đã tìm được.
+- Trả lời theo luồng; lưu lịch sử hội thoại cục bộ.
+- Giao diện web tĩnh để hỏi đáp và quản lý nhóm/tài liệu.
 
-Thay vì yêu cầu mô hình ngôn ngữ tự sinh câu trả lời dựa trên kiến thức có sẵn, hệ thống trước tiên tìm kiếm các đoạn thông tin liên quan trong kho tài liệu nội bộ, sau đó sử dụng các đoạn thông tin này làm context cho LLM tạo câu trả lời.
+## Công nghệ và mô hình
 
-### Mục tiêu của đề tài
+- **Backend:** Python, FastAPI, Uvicorn
+- **RAG:** LlamaIndex; vector index lưu cục bộ
+- **LLM:** Ollama, mặc định dùng `qwen2.5:3b`
+- **Embedding:** Hugging Face model `AITeamVN/Vietnamese_Embedding`
+- **Reranker:** `kiencnt2205/vietnamese-legal-reranker-bge-base`
+- **Frontend:** HTML, CSS và JavaScript thuần
 
-* Tìm hiểu kiến trúc và các thành phần chính của **LlamaIndex**.
-* Tìm hiểu quy trình xây dựng một hệ thống **RAG**.
-* Xây dựng pipeline xử lý tài liệu nội bộ.
-* Xây dựng cơ chế truy xuất các Node liên quan đến câu hỏi.
-* Sử dụng LLM để tổng hợp câu trả lời dựa trên context được truy xuất.
-* Xây dựng giao diện chatbot bằng **Streamlit**.
-* Hỗ trợ quản lý tài liệu theo từng nhóm/label.
-* Hiển thị nguồn tài liệu được sử dụng để tạo câu trả lời.
-* Lưu và hiển thị lịch sử hỏi đáp.
+Các giá trị cấu hình chunking, retrieval và model nằm trong [constants.py](constants.py). LLM được khởi tạo trong [ingestion.py](ingestion.py) và [responsesynthesizer.py](responsesynthesizer.py).
 
----
-
-# 2. Công nghệ sử dụng
-
-| Công nghệ           | Vai trò                                  |
-| ------------------- | ---------------------------------------- |
-| **Python**          | Ngôn ngữ lập trình chính                 |
-| **LlamaIndex**      | Framework chính để xây dựng pipeline RAG |
-| **RAG**             | Bài toán và kiến trúc chính của hệ thống |
-| **Embedding Model** | Chuyển văn bản/query thành vector        |
-| **Vector Store**    | Lưu trữ và tìm kiếm vector               |
-| **LLM**             | Sinh câu trả lời dựa trên context        |
-| **Streamlit**       | Xây dựng giao diện web                   |
-| **PDF/DOCX**        | Nguồn tài liệu nội bộ                    |
-
----
-
-# 3. Kiến trúc tổng quan
-
-Hệ thống được chia thành 3 thành phần chính:
+## Cấu trúc chính
 
 ```text
-┌────────────────────────────────────────────────────────────┐
-│                     STREAMLIT UI                           │
-│                         app.py                             │
-│                                                            │
-│  📚 Documents     💬 Chat RAG     🕘 History     👤 Auth │
-└────────────────────────────┬───────────────────────────────┘
-                             │
-                             ▼
-┌────────────────────────────────────────────────────────────┐
-│                       LlamaIndex                           │
-│                                                            │
-│  Ingestion        →       Retrieval       →   Generation  │
-│                                                            │
-│  Document                 Retriever            Response    │
-│      ↓                    ↓                    Synthesizer │
-│  Node / Chunk             ↓                    ↓           │
-│      ↓                  Reranker               LLM        │
-│  Embedding                 ↓                    ↓           │
-│      ↓              Relevant Nodes         Final Answer  │
-│  Vector Store                                             │
-└────────────────────────────────────────────────────────────┘
+.
+├── main2.py                 # FastAPI app và các API
+├── test.py                  # RAGService: indexing, retrieval, generation
+├── ingestion.py             # Đọc tài liệu, tạo và nạp index
+├── constants.py             # Model và tham số RAG
+├── postprocessors.py        # Similarity filter và reranker
+├── responsesynthesizer.py   # Sinh câu trả lời bằng LlamaIndex
+├── chathistory.py           # Lưu lịch sử chat
+├── data/                    # Tài liệu, chia theo thư mục nhóm
+├── storage/                 # Index đã persist và lịch sử chat
+├── frontend/                # Giao diện web tĩnh
+├── src/                     # Các module và thử nghiệm phát triển
+└── evaluation/              # Dataset, script và kết quả đánh giá
 ```
-
----
-
-# 4. Cấu trúc thư mục
-
-Project được chia thành các module độc lập để 3 thành viên có thể phát triển song song và hạn chế xung đột khi merge Git.
-
-```text
-project/
-│
-├── app.py
-├── requirements.txt
-├── .env
-├── .gitignore
-│
-├── data/
-│   └── # Tài liệu đầu vào
-│
-├── storage/
-│   └── # Index / Vector Store được persist
-│
-├── src/
-│   │
-│   ├── config.py
-│   │
-│   ├── ingestion/
-│   │   ├── __init__.py
-│   │   ├── loader.py
-│   │   ├── parser.py
-│   │   ├── pipeline.py
-│   │   └── index.py
-│   │
-│   ├── retrieval/
-│   │   ├── __init__.py
-│   │   ├── retriever.py
-│   │   ├── filter.py
-│   │   ├── hybrid.py
-│   │   └── reranker.py
-│   │
-│   ├── generation/
-│   │   ├── __init__.py
-│   │   ├── llm.py
-│   │   ├── synthesizer.py
-│   │   ├── prompt.py
-│   │   └── query_engine.py
-│   │
-│   └── ui/
-│       ├── __init__.py
-│       ├── chat.py
-│       ├── sidebar.py
-│       └── components.py
-│
-└── README.md
-```
-
-## Phân chia module
-
-### `app.py`
-
-File khởi chạy ứng dụng Streamlit và điều phối các thành phần giao diện.
-
-```text
-app.py
- ├── Authentication
- ├── Document Management
- ├── Chat RAG
- └── History
-```
-
-### `src/ingestion/`
-
-Phụ trách quá trình đưa tài liệu vào hệ thống:
-
-```text
-Document
-    ↓
-Document Loader
-    ↓
-Node Parser / Chunking
-    ↓
-Metadata
-    ↓
-Embedding
-    ↓
-Vector Store / Index
-```
-
-Các file chính:
-
-* `loader.py`: đọc PDF/DOCX và tạo `Document`.
-* `parser.py`: chia tài liệu thành các Node.
-* `pipeline.py`: xây dựng `IngestionPipeline`.
-* `index.py`: tạo, lưu và load Index/Vector Store.
-
-### `src/retrieval/`
-
-Phụ trách quá trình tìm kiếm thông tin liên quan:
-
-```text
-User Query
-    ↓
-Retriever
-    ↓
-Metadata Filter
-    ↓
-Vector / Keyword / Hybrid Retrieval
-    ↓
-Reranker / Node Postprocessor
-    ↓
-Relevant Nodes
-```
-
-Các file chính:
-
-* `retriever.py`: tạo Retriever.
-* `filter.py`: xử lý Metadata Filter.
-* `hybrid.py`: xử lý Hybrid Retrieval nếu được sử dụng.
-* `reranker.py`: rerank các Node được truy xuất.
-
-Trong LlamaIndex, Node Postprocessor có thể xử lý các Node sau Retrieval và trước Response Synthesis, bao gồm các cơ chế như reranking, metadata filtering hoặc similarity filtering.
-
-### `src/generation/`
-
-Phụ trách quá trình tạo câu trả lời:
-
-```text
-Relevant Nodes
-      ↓
-Response Synthesizer
-      ↓
-Prompt + Context
-      ↓
-LLM
-      ↓
-Final Answer
-```
-
-Các file chính:
-
-* `llm.py`: cấu hình LLM.
-* `synthesizer.py`: cấu hình Response Synthesizer.
-* `prompt.py`: quản lý prompt.
-* `query_engine.py`: kết nối Retrieval với Generation.
-
-### `src/ui/`
-
-Chứa các thành phần giao diện Streamlit:
-
-* `chat.py`: giao diện chatbot.
-* `sidebar.py`: menu điều hướng.
-* `components.py`: các component dùng chung.
-
----
-
-# 5. Luồng hoạt động nghiệp vụ chính
-
-## 5.1. Quản lý tài liệu
-
-Người dùng có thể tạo các nhóm tài liệu bằng **Label**.
-
-Ví dụ:
-
-```text
-📁 Quy định học bổng
-    ├── quy-dinh-hoc-bong.pdf
-    ├── dieu-kien-hoc-bong.pdf
-    └── muc-hoc-bong.docx
-
-📁 Quy định tín chỉ
-    ├── quy-che-dao-tao.pdf
-    └── quy-dinh-dang-ky-hoc-phan.pdf
-
-📁 Quy định học phí
-    └── quy-dinh-hoc-phi.pdf
-```
-
-Một Label có thể chứa nhiều tài liệu.
-
-Khi tài liệu được đưa vào hệ thống, quá trình xử lý chính là:
-
-```text
-PDF / DOCX
-    ↓
-Document Loader
-    ↓
-Document
-    ↓
-Chunking
-    ↓
-TextNode
-    ↓
-Metadata
-    ↓
-Embedding
-    ↓
-Vector Store
-```
-
-Các Node được tạo ra từ quá trình xử lý tài liệu có thể chứa nội dung văn bản cùng metadata như tên file, trang, đường dẫn và các thông tin liên quan.
-
----
-
-# 6. Luồng RAG
-
-Đây là luồng nghiệp vụ chính của hệ thống.
-
-```text
-                    ┌──────────────┐
-                    │   Documents │
-                    └──────┬───────┘
-                           ↓
-                    ┌──────────────┐
-                    │  Ingestion   │
-                    └──────┬───────┘
-                           ↓
-                     Documents
-                           ↓
-                       Chunking
-                           ↓
-                         Nodes
-                           ↓
-                       Embedding
-                           ↓
-                    Vector Store
-                           │
-                           │
-                           │
-User Query ────────────────┘
-     │
-     ↓
-Embedding Query
-     ↓
-Query Vector
-     ↓
-Retriever
-     ↓
-Similarity Search
-     ↓
-Top-K Nodes
-     ↓
-Node Postprocessor / Reranker
-     ↓
-Relevant Nodes
-     ↓
-Response Synthesizer
-     ↓
-Prompt + Context
-     ↓
-LLM
-     ↓
-Response
-     ↓
-Final Answer
-```
-
-Với Vector Retrieval, query được chuyển thành vector, sau đó được sử dụng để tìm kiếm các Node có độ tương đồng cao trong Vector Store. Kết quả Retrieval có thể được biểu diễn dưới dạng `NodeWithScore`, trong đó mỗi Node đi kèm điểm tương đồng.
-
----
-
-# 7. Luồng hỏi đáp cụ thể
-
-Ví dụ người dùng hỏi:
-
-> **"Điều kiện rút học phần là gì?"**
-
-Hệ thống thực hiện:
-
-### Bước 1 — Nhận Query
-
-```text
-Điều kiện rút học phần là gì?
-```
-
-### Bước 2 — Embedding Query
-
-Query được chuyển thành vector bằng Embedding Model.
-
-```text
-User Query
-     ↓
-Embedding Model
-     ↓
-Query Vector
-```
-
-### Bước 3 — Retrieval
-
-Retriever tìm kiếm các Node phù hợp trong Vector Store.
-
-```text
-Query Vector
-     ↓
-Vector Store
-     ↓
-Similarity Search
-     ↓
-Top-K Nodes
-```
-
-Ví dụ:
-
-```text
-Node 1 → score = 0.91
-Node 2 → score = 0.83
-Node 3 → score = 0.78
-```
-
-### Bước 4 — Postprocessing / Reranking
-
-Các Node được xử lý hoặc sắp xếp lại nhằm chọn context phù hợp hơn cho LLM.
-
-```text
-Retrieved Nodes
-       ↓
-Reranker / Filter
-       ↓
-Relevant Nodes
-```
-
-### Bước 5 — Response Synthesis
-
-Các Node liên quan được đưa vào Response Synthesizer cùng với Query.
-
-```text
-Query
-  +
-Relevant Nodes
-  ↓
-Response Synthesizer
-```
-
-### Bước 6 — LLM
-
-LLM nhận prompt chứa câu hỏi và context từ tài liệu.
-
-```text
-Prompt
-  +
-Context
-  ↓
-LLM
-  ↓
-Answer
-```
-
-### Bước 7 — Trả kết quả
-
-Hệ thống hiển thị:
-
-```text
-🤖 Câu trả lời
-
-Theo quy định..., việc rút bớt học phần
-được thực hiện trong thời hạn...
-
-📚 Nguồn:
-- quyet_dinh.pdf
-- Trang 1
-```
-
-Response của LlamaIndex có thể chứa cả câu trả lời và các `source_nodes`, giúp hệ thống hiển thị nguồn tài liệu được sử dụng trong quá trình sinh câu trả lời.
-
----
-
-# 8. Giao diện Streamlit
-
-Giao diện chính được triển khai trong:
-
-```text
-app.py
-```
-
-Hệ thống gồm các khu vực chính:
-
-```text
-┌───────────────────────────────────────────────────────┐
-│                    Academic RAG                       │
-├───────────────┬───────────────────────────────────────┤
-│               │                                       │
-│ 💬 Hỏi đáp    │          Chat RAG                    │
-│               │                                       │
-│ 📚 Tài liệu   │   User: Điều kiện học bổng là gì?   │
-│               │                                       │
-│ 🕘 Lịch sử    │   AI: Theo quy định...              │
-│               │                                       │
-│ 👤 Tài khoản  │   📚 Nguồn tài liệu                  │
-│               │                                       │
-│ 🚪 Đăng xuất  │   [ Nhập câu hỏi... ]               │
-└───────────────┴───────────────────────────────────────┘
-```
-
-### Các chức năng giao diện
-
-#### 1. Đăng nhập / Đăng xuất
-
-Cho phép người dùng đăng nhập và đăng xuất khỏi hệ thống.
-
-#### 2. Quản lý tài liệu
-
-Cho phép:
-
-* Tạo Label.
-* Upload nhiều PDF/DOCX vào một Label.
-* Quản lý các nhóm tài liệu.
-
-#### 3. Hỏi đáp RAG
-
-Cho phép người dùng nhập câu hỏi và nhận câu trả lời từ hệ thống RAG.
-
-#### 4. Lịch sử
-
-Lưu và hiển thị các câu hỏi/câu trả lời trước đó trong phiên làm việc.
-
----
-
-# 9. Cài đặt
 
 ## Yêu cầu
 
-* Python 3.10+
-* Git
-* Môi trường ảo Python
-* LLM local 
-* Các thư viện được khai báo trong `requirements.txt`
+- Windows 10/11 (các lệnh bên dưới dành cho PowerShell), Python 3.10 trở lên
+- [Ollama](https://ollama.com/) đã cài đặt và đang chạy
+- Git (nếu clone dự án)
 
----
+## Cài đặt
 
-## Tạo môi trường ảo
+Mở PowerShell tại thư mục dự án:
 
-### Windows
-
-```bash
-python -m venv .venv
-```
-
-Kích hoạt:
-
-```bash
-.venv\Scripts\activate
-```
-
-### Linux / WSL
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
----
-
-# 11. Cài đặt thư viện
-
-Sau khi kích hoạt môi trường ảo:
-
-```bash
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Các package LlamaIndex sẽ được bổ sung theo Embedding Model, LLM, Reader và Vector Store mà project sử dụng.
+Nếu PowerShell chặn kích hoạt môi trường ảo, có thể chạy lệnh này trong cửa sổ hiện tại rồi kích hoạt lại:
 
----
-
-# 12. Chạy ứng dụng
-
-Từ thư mục gốc của project:
-
-```bash
-streamlit run app.py
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
 ```
 
-Sau khi chạy thành công, Streamlit sẽ cung cấp địa chỉ truy cập ứng dụng, thường là:
+Tải model LLM mà ứng dụng sử dụng:
 
-```text
-http://localhost:8501
+```powershell
+ollama pull qwen2.5:3b
 ```
 
-Mở địa chỉ trên trình duyệt để sử dụng hệ thống.
+Embedding và reranker được tải từ Hugging Face khi cần; lần chạy đầu tiên có thể mất thêm thời gian và cần kết nối Internet.
 
----
+## Chạy ứng dụng
 
-# 13. Quy trình sử dụng
+### 1. Khởi động backend
 
-### Bước 1 — Đăng nhập
+Tại thư mục gốc dự án, sau khi kích hoạt môi trường ảo:
 
-Đăng nhập vào hệ thống.
-
-### Bước 2 — Tạo Label
-
-Ví dụ:
-
-```text
-Quy định học bổng
+```powershell
+uvicorn main2:app --reload
 ```
 
-### Bước 3 — Upload tài liệu
+Backend mặc định chạy tại `http://127.0.0.1:8000`. Có thể mở `http://127.0.0.1:8000/docs` để xem và thử các API.
 
-Upload các tài liệu liên quan:
+Khi khởi động, ứng dụng nạp index có sẵn trong `storage/`; nếu chưa có index cho một nhóm tài liệu, ứng dụng sẽ tạo index từ dữ liệu tương ứng trong `data/`. Quá trình này có thể cần nhiều thời gian ở lần chạy đầu.
 
-```text
-quy-dinh-hoc-bong.pdf
-dieu-kien-hoc-bong.pdf
-muc-hoc-bong.docx
+### 2. Khởi động giao diện
+
+Giao diện gọi API tại `http://127.0.0.1:8000` và backend hiện cho phép CORS từ cổng `5500`. Có thể mở thư mục `frontend/` bằng tiện ích **Live Server** trong VS Code, sau đó truy cập địa chỉ Live Server, thường là `http://127.0.0.1:5500`.
+
+Không mở `index.html` trực tiếp bằng `file://`, vì trình duyệt có thể chặn các yêu cầu tới API.
+
+## Sử dụng
+
+1. Đảm bảo Ollama và backend đang chạy; mở giao diện bằng Live Server.
+2. Vào **Quản lý tài liệu** để tạo nhóm và tải lên PDF, DOCX hoặc TXT. Có thể thêm tài liệu vào thư mục `data/<tên nhóm>/` trước khi khởi động backend.
+3. Chọn một nhóm cụ thể hoặc **Tất cả tài liệu** làm phạm vi tìm kiếm.
+4. Nhập câu hỏi ở trang **Hỏi đáp RAG**. Câu trả lời được truyền về theo luồng.
+5. Các cuộc trò chuyện được lưu trong `storage/chat_store.json`.
+
+Mỗi nhóm có index riêng trong `storage/<tên nhóm>/`. Khi tải lên hoặc xóa tài liệu qua giao diện, backend cập nhật lại index của nhóm đó. Không xóa hoặc chỉnh sửa thủ công nội dung trong `storage/` khi ứng dụng đang chạy.
+
+## API chính
+
+| Phương thức | Đường dẫn | Chức năng |
+|---|---|---|
+| `GET` | `/` | Kiểm tra backend |
+| `GET` | `/documents` | Liệt kê nhóm và tài liệu |
+| `POST` | `/groups` | Tạo nhóm tài liệu |
+| `DELETE` | `/groups/{name}` | Xóa nhóm và cập nhật index |
+| `POST` | `/upload` | Tải tài liệu lên và index nhóm |
+| `DELETE` | `/documents/file` | Xóa tài liệu và cập nhật index |
+| `POST` | `/chat` | Hỏi đáp dạng streaming |
+| `GET` | `/conversations` | Liệt kê cuộc trò chuyện |
+| `GET` | `/conversations/{conversation_id}` | Lấy tin nhắn của cuộc trò chuyện |
+| `DELETE` | `/conversations/{conversation_id}` | Xóa cuộc trò chuyện |
+
+## Đánh giá và kiểm thử
+
+Các script và bộ dữ liệu đánh giá retrieval, response nằm trong `evaluation/`. Một số kiểm thử nằm trong `tests/` và các module `src/`. Có thể chạy bộ kiểm thử bằng:
+
+```powershell
+python -m pytest
 ```
 
-### Bước 4 — Xử lý tài liệu
+Nếu chưa cài pytest trong môi trường hiện tại, cài bằng `python -m pip install pytest`.
 
-Hệ thống thực hiện:
+## Lưu ý
 
-```text
-Document
- ↓
-Chunking
- ↓
-Node
- ↓
-Metadata
- ↓
-Embedding
- ↓
-Vector Store / Index
-```
-
-### Bước 5 — Đặt câu hỏi
-
-Ví dụ:
-
-```text
-Điều kiện để được học bổng là gì?
-```
-
-### Bước 6 — RAG Retrieval
-
-Hệ thống tìm các Node liên quan đến câu hỏi.
-
-### Bước 7 — Sinh câu trả lời
-
-Các Node được sử dụng làm context cho LLM.
-
-### Bước 8 — Hiển thị kết quả
-
-Hệ thống trả về:
-
-* Câu trả lời.
-* Nguồn tài liệu.
-* Thông tin liên quan đến Node được sử dụng.
-
----
-
-# 14. Git Workflow
-
-Để 3 thành viên làm việc song song, project sử dụng các branch riêng:
-
-```text
-main
- │
- ├── feature/ingestion
- ├── feature/retrieval
- └── feature/generation-ui
-```
-
-Mỗi thành viên chủ yếu chỉnh sửa module của mình:
-
-```text
-feature/ingestion
-    ↓
-src/ingestion/
-
-feature/retrieval
-    ↓
-src/retrieval/
-
-feature/generation-ui
-    ↓
-src/generation/
-src/ui/
-app.py
-```
-
-Các module giao tiếp với nhau thông qua interface rõ ràng:
-
-```text
-load_index()
-     ↓
-VectorStoreIndex
-     ↓
-retrieve(index, query)
-     ↓
-List[NodeWithScore]
-     ↓
-generate_response(query, nodes)
-     ↓
-str
-```
-
-Cách tổ chức này giúp giảm việc nhiều thành viên cùng chỉnh sửa một file và hạn chế conflict khi merge.
-
----
-
-# 15. Mục tiêu của hệ thống
-
-Hệ thống hướng tới việc minh họa cách **LlamaIndex hỗ trợ xây dựng một ứng dụng RAG trên dữ liệu nội bộ**, từ khâu xử lý tài liệu, indexing, retrieval cho đến response synthesis và hiển thị kết quả.
-
-Luồng cốt lõi của hệ thống:
-
-```text
-                DOCUMENTS
-                    │
-                    ▼
-              ┌───────────┐
-              │ Ingestion │
-              └─────┬─────┘
-                    │
-                    ▼
-                  Nodes
-                    │
-                    ▼
-                Embedding
-                    │
-                    ▼
-               Vector Store
-                    │
-                    │
-                    ▼
-USER QUERY ──►  Retrieval
-                    │
-                    ▼
-                 Rerank
-                    │
-                    ▼
-             Relevant Nodes
-                    │
-                    ▼
-          Response Synthesizer
-                    │
-                    ▼
-                   LLM
-                    │
-                    ▼
-              FINAL ANSWER
-                    │
-                    ▼
-              Streamlit UI
-```
-
-Đây là pipeline RAG cốt lõi được sử dụng để giải quyết bài toán **tra cứu quy định học vụ từ tài liệu nội bộ**.
-
-thêm "**/data/**" vào liveServer.settings.ignoreFiles
+- LLM cần Ollama đang chạy và model `qwen2.5:3b` có sẵn cục bộ.
+- Embedding model và reranker có thể cần tải về ở lần chạy đầu.
+- Dữ liệu, index và lịch sử chat được lưu cục bộ trong `data/` và `storage/`; hãy sao lưu nếu cần giữ lại.
+- Đây là đồ án thử nghiệm, không thay thế việc kiểm tra văn bản gốc hoặc tư vấn chuyên môn.
