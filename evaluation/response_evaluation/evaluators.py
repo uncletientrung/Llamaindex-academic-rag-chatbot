@@ -5,7 +5,7 @@ from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from constants import EMBEDDING_MODEL
 
-llm = Ollama(model="qwen2.5:7b",request_timeout=120.0,)
+llm = Ollama(model="qwen2.5:3b",request_timeout=120.0,)
 embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
 
 def build_evaluators():

@@ -4,5 +4,599 @@
     "query": "Theo Bộ luật Lao động, người lao động là gì?",
     "reference": "Người lao động là người từ đủ 15 tuổi trở lên, có khả năng lao động, làm việc theo hợp đồng lao động, được trả lương và chịu sự quản lý, điều hành của người sử dụng lao động.",
     "group": "Luật lao động"
+  },
+  {
+    "id": "00002",
+    "query": "Người lao động làm việc theo hợp đồng lao động mùa vụ có phải thử việc không?",
+    "reference": "Người lao động làm việc theo hợp đồng lao động mùa vụ thì không phải thử việc.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00003",
+    "query": "Thời gian thử việc đối với công việc có chức danh nghề cần trình độ chuyên môn, kỹ thuật từ cao đẳng trở lên là bao nhiêu ngày?",
+    "reference": "Thời gian thử việc không quá 60 ngày đối với công việc có chức danh nghề cần trình độ chuyên môn, kỹ thuật từ cao đẳng trở lên.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00004",
+    "query": "Tiền lương của người lao động trong thời gian thử việc được quy định như thế nào?",
+    "reference": "Tiền lương của người lao động trong thời gian thử việc do hai bên thỏa thuận nhưng ít nhất phải bằng 85% mức lương của công việc đó.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00005",
+    "query": "Có bao nhiêu loại hợp đồng lao động theo quy định của Bộ luật Lao động?",
+    "reference": "Có 3 loại hợp đồng lao động: Hợp đồng lao động không xác định thời hạn; Hợp đồng lao động xác định thời hạn (từ đủ 12 tháng đến 36 tháng); Hợp đồng lao động theo mùa vụ hoặc theo một công việc nhất định có thời hạn dưới 12 tháng.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00006",
+    "query": "Thời giờ làm việc bình thường của người lao động được quy định như thế nào?",
+    "reference": "Thời giờ làm việc bình thường không quá 08 giờ trong 01 ngày và không quá 48 giờ trong 01 tuần.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00007",
+    "query": "Giờ làm việc ban đêm được tính từ mấy giờ đến mấy giờ?",
+    "reference": "Giờ làm việc ban đêm được tính từ 22 giờ đến 6 giờ sáng ngày hôm sau.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00008",
+    "query": "Mức tiền lương làm thêm giờ vào ngày thường đối với người lao động là bao nhiêu?",
+    "reference": "Người lao động làm thêm giờ vào ngày thường được trả lương tính theo đơn giá tiền lương hoặc tiền lương theo công việc đang làm ít nhất bằng 150%.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00009",
+    "query": "Mức tiền lương làm thêm giờ vào ngày nghỉ hằng tuần đối với người lao động là bao nhiêu?",
+    "reference": "Người lao động làm thêm giờ vào ngày nghỉ hằng tuần được trả lương tính theo đơn giá tiền lương hoặc tiền lương theo công việc đang làm ít nhất bằng 200%.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00010",
+    "query": "Người lao động có đủ 12 tháng làm việc trong điều kiện bình thường cho một người sử dụng lao động được nghỉ hằng năm bao nhiêu ngày?",
+    "reference": "Người lao động có đủ 12 tháng làm việc cho một người sử dụng lao động trong điều kiện bình thường thì được nghỉ hằng năm 12 ngày làm việc hưởng nguyên lương.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00011",
+    "query": "Thời gian làm việc để tăng thêm 01 ngày nghỉ hằng năm theo thâm niên là bao nhiêu năm?",
+    "reference": "Cứ 05 năm làm việc cho một người sử dụng lao động thì số ngày nghỉ hằng năm của người lao động được tăng thêm tương ứng 01 ngày.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00012",
+    "query": "Người lao động kết hôn được nghỉ việc riêng hưởng nguyên lương bao nhiêu ngày?",
+    "reference": "Người lao động kết hôn được nghỉ việc riêng hưởng nguyên lương 03 ngày.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00013",
+    "query": "Khi bố đẻ, mẹ đẻ, bố vợ, mẹ vợ hoặc vợ/chồng/con chết thì người lao động được nghỉ hưởng nguyên lương bao nhiêu ngày?",
+    "reference": "Người lao động được nghỉ việc riêng hưởng nguyên lương 03 ngày khi bố đẻ, mẹ đẻ, bố vợ, mẹ vợ hoặc bố chồng, mẹ chồng chết; vợ chết hoặc chồng chết; con chết.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00014",
+    "query": "Các hình thức xử lý kỷ luật lao động gồm những hình thức nào?",
+    "reference": "Các hình thức xử lý kỷ luật lao động gồm: 1. Khiển trách; 2. Kéo dài thời hạn nâng lương không quá 06 tháng, hoặc cách chức; 3. Sa thải.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00015",
+    "query": "Thời hiệu xử lý kỷ luật lao động tối đa là bao lâu?",
+    "reference": "Thời hiệu xử lý kỷ luật lao động tối đa là 06 tháng kể từ ngày xảy ra hành vi vi phạm; trường hợp vi phạm liên quan trực tiếp đến tài chính, tài sản, tiết lộ bí mật công nghệ, bí mật kinh doanh thì thời hiệu tối đa là 12 tháng.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00016",
+    "query": "Thời gian nghỉ thai sản trước và sau khi sinh con của lao động nữ là bao nhiêu tháng?",
+    "reference": "Lao động nữ được nghỉ trước và sau khi sinh con là 06 tháng.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00017",
+    "query": "Lao động chưa thành niên là người lao động ở độ tuổi nào?",
+    "reference": "Người lao động chưa thành niên là người lao động dưới 18 tuổi.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00018",
+    "query": "Thời hạn của giấy phép lao động cấp cho công dân nước ngoài làm việc tại Việt Nam tối đa là bao nhiêu năm?",
+    "reference": "Thời hạn của giấy phép lao động tối đa là 02 năm.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00019",
+    "query": "Mức khấu trừ tiền lương hằng tháng của người lao động không được vượt quá bao nhiêu percent?",
+    "reference": "Mức khấu trừ tiền lương hằng tháng không được quá 30% tiền lương hằng tháng của người lao động sau khi trích nộp các khoản bảo hiểm xã hội bắt buộc, bảo hiểm y tế, bảo hiểm thất nghiệp và thuế thu nhập.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00020",
+    "query": "Khi đơn phương chấm dứt hợp đồng lao động không xác định thời hạn, người lao động phải báo trước ít nhất bao nhiêu ngày?",
+    "reference": "Người lao động làm việc theo hợp đồng lao động không xác định thời hạn có quyền đơn phương chấm dứt hợp đồng lao động nhưng phải báo cho người sử dụng lao động biết trước ít nhất 45 ngày.",
+    "group": "Luật lao động"
+  },
+  {
+    "id": "00021",
+    "query": "Luật Doanh nghiệp năm 2020 (Luật số 59/2020/QH14) có hiệu lực thi hành từ ngày nào?",
+    "reference": "Luật Doanh nghiệp năm 2020 có hiệu lực thi hành từ ngày 01/01/2021.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00022",
+    "query": "Theo Luật Doanh nghiệp 2020, Doanh nghiệp nhà nước bao gồm những doanh nghiệp nào?",
+    "reference": "Doanh nghiệp nhà nước bao gồm các doanh nghiệp do Nhà nước nắm giữ trên 50% vốn điều lệ hoặc tổng số cổ phần có quyền biểu quyết.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00023",
+    "query": "Điểm đột phá về con dấu doanh nghiệp theo Luật Doanh nghiệp 2020 so với Luật 2014 là gì?",
+    "reference": "Luật Doanh nghiệp 2020 công nhận chữ ký số là dấu của doanh nghiệp và bãi bỏ thủ tục thông báo mẫu con dấu với cơ quan đăng ký kinh doanh trước khi sử dụng.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00024",
+    "query": "Thời hạn góp đủ vốn điều lệ khi thành lập doanh nghiệp là bao nhiêu ngày?",
+    "reference": "Thời hạn góp đủ vốn điều lệ là 90 ngày kể từ ngày được cấp Giấy chứng nhận đăng ký doanh nghiệp (không tính thời gian vận chuyển, nhập khẩu tài sản góp vốn, thực hiện thủ tục hành chính).",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00025",
+    "query": "Luật Doanh nghiệp 2020 đã giảm điều kiện tỷ lệ sở hữu cổ phần để cổ đông phổ thông thực hiện một số quyền quan trọng từ mức nào xuống mức nào?",
+    "reference": "Giảm yêu cầu điều kiện về tỷ lệ sở hữu cổ phần phổ thông từ 10% xuống 5%.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00026",
+    "query": "Tỷ lệ vốn điều lệ hoặc cổ tức để xác định tiêu chí cá nhân là Chủ sở hữu hưởng lợi của doanh nghiệp là bao nhiêu?",
+    "reference": "Cá nhân thực tế nắm giữ trực tiếp hoặc gián tiếp từ 25% vốn điều lệ trở lên hoặc được hưởng hơn 25% cổ tức hoặc lợi nhuận của doanh nghiệp.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00027",
+    "query": "Thời gian lưu trữ thông tin về tất cả các chủ sở hữu hưởng lợi của doanh nghiệp sau khi giải thể/phá sản tối thiểu là bao nhiêu năm?",
+    "reference": "Thông tin về tất cả các chủ sở hữu hưởng lợi phải được lưu trữ trong suốt quá trình hoạt động và ít nhất 05 năm sau ngày doanh nghiệp giải thể, phá sản, chấm dứt hoạt động.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00028",
+    "query": "Theo Luật Doanh nghiệp 2020, Giấy chứng nhận đăng ký doanh nghiệp có còn ghi nhận thông tin về ngành nghề kinh doanh không?",
+    "reference": "Không, Luật Doanh nghiệp đã bỏ thông tin về ngành nghề kinh doanh trên Giấy chứng nhận đăng ký doanh nghiệp nhằm thể chế hóa quyền tự do kinh doanh trong các ngành nghề mà pháp luật không cấm.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00029",
+    "query": "Doanh nghiệp có bắt buộc phải niêm yết công khai mẫu con dấu trên Cổng thông tin quốc gia về đăng ký doanh nghiệp không?",
+    "reference": "Không, Luật Doanh nghiệp 2020 đã bãi bỏ quy định bắt buộc doanh nghiệp thông báo mẫu con dấu với cơ quan đăng ký kinh doanh.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00030",
+    "query": "Nghị định nào của Chính phủ quy định chi tiết về đăng ký doanh nghiệp hướng dẫn Luật Doanh nghiệp 2020?",
+    "reference": "Nghị định số 01/2021/NĐ-CP ngày 04/01/2021 của Chính phủ quy định về đăng ký doanh nghiệp.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00031",
+    "query": "Doanh nghiệp xã hội phải đáp ứng các tiêu chí cơ bản nào theo Luật Doanh nghiệp?",
+    "reference": "Doanh nghiệp xã hội là doanh nghiệp được đăng ký thành lập theo Luật Doanh nghiệp, có mục tiêu giải quyết vấn đề xã hội, môi trường vì lợi ích cộng đồng và sử dụng ít nhất 51% tổng lợi nhuận sau thuế hằng năm để tái đầu tư thực hiện mục tiêu.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00032",
+    "query": "Chi nhánh của doanh nghiệp có tư cách pháp nhân độc lập không?",
+    "reference": "Chi nhánh là đơn vị phụ thuộc của doanh nghiệp, không phải là pháp nhân độc lập.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00033",
+    "query": "Sự khác biệt giữa việc đăng ký doanh nghiệp qua mạng và đăng ký truyền thống là gì?",
+    "reference": "Đăng ký doanh nghiệp qua mạng giúp cắt giảm thời gian, chi phí giải quyết thủ tục hành chính, sử dụng hồ sơ điện tử và dịch vụ công trực tuyến trên Hệ thống thông tin quốc gia về đăng ký doanh nghiệp.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00034",
+    "query": "Một cá nhân có thể thành lập bao nhiêu doanh nghiệp tư nhân?",
+    "reference": "Mỗi cá nhân chỉ được quyền thành lập một doanh nghiệp tư nhân theo quy định của pháp luật doanh nghiệp.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00035",
+    "query": "Chủ sở hữu công ty TNHH một thành viên chịu trách nhiệm về các khoản nợ của công ty trong phạm vi nào?",
+    "reference": "Chủ sở hữu công ty TNHH một thành viên chịu trách nhiệm về các khoản nợ và nghĩa vụ tài sản khác của công ty trong phạm vi số vốn điều lệ của công ty.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00036",
+    "query": "Cổ đông sáng lập công ty cổ phần phải cùng nhau đăng ký mua ít nhất bao nhiêu percent tổng số cổ phần phổ thông được quyền chào bán khi thành lập?",
+    "reference": "Các cổ đông sáng lập phải cùng nhau đăng ký mua ít nhất 20% tổng số cổ phần phổ thông được quyền chào bán khi đăng ký thành lập doanh nghiệp.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00037",
+    "query": "Trong thời hạn bao nhiêu ngày kể từ ngày quyết định tăng hoặc giảm vốn điều lệ, doanh nghiệp phải thông báo với cơ quan đăng ký kinh doanh?",
+    "reference": "Doanh nghiệp phải thông báo bằng văn bản đến Cơ quan đăng ký kinh doanh trong thời hạn 10 ngày kể từ ngày hoàn thành việc tăng hoặc giảm vốn điều lệ.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00038",
+    "query": "Nghị định nào quy định chi tiết một số điều của Luật Doanh nghiệp về doanh nghiệp xã hội, nhóm công ty, doanh nghiệp nhà nước?",
+    "reference": "Nghị định số 47/2021/NĐ-CP ngày 01/04/2021 của Chính phủ.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00039",
+    "query": "Đối tượng nào bị cấm thành lập và quản lý doanh nghiệp theo Luật Doanh nghiệp?",
+    "reference": "Cơ quan nhà nước, đơn vị lực lượng vũ trang nhân dân sử dụng tài sản nhà nước thành lập doanh nghiệp kinh doanh thu lợi riêng; cán bộ, công chức, viên chức; sĩ quan, quân nhân chuyên nghiệp; người đang bị truy cứu trách nhiệm hình sự hoặc chấp hành hình phạt tù.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00040",
+    "query": "Chủ thể kinh doanh nào không có tư cách pháp nhân nhưng do một cá nhân làm chủ và tự chịu trách nhiệm bằng toàn bộ tài sản của mình?",
+    "reference": "Doanh nghiệp tư nhân.",
+    "group": "Luật doanh nghiệp"
+  },
+  {
+    "id": "00041",
+    "query": "Luật Giao thông đường bộ số 23/2008/QH12 do Quốc hội ban hành có hiệu lực thi hành từ ngày nào?",
+    "reference": "Luật Giao thông đường bộ năm 2008 có hiệu lực thi hành từ ngày 01 tháng 7 năm 2009.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00042",
+    "query": "Hệ thống báo hiệu đường bộ gồm những bộ phận nào?",
+    "reference": "Hệ thống báo hiệu đường bộ gồm: hiệu lệnh của người điều khiển giao thông; tín hiệu đèn giao thông, biển báo hiệu, vạch kẻ đường, cọc tiêu hoặc tường bảo vệ, rào chắn.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00043",
+    "query": "Ý nghĩa của ba màu tín hiệu đèn giao thông (xanh, đỏ, vàng) là gì?",
+    "reference": "Tín hiệu xanh là được đi; Tín hiệu đỏ là cấm đi; Tín hiệu vàng là phải dừng lại trước vạch dừng, trừ trường hợp đã đi quá vạch dừng thì được đi tiếp.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00044",
+    "query": "Người đủ 16 tuổi trở lên được điều khiển loại phương tiện giao thông đường bộ nào?",
+    "reference": "Người đủ 16 tuổi trở lên được lái xe gắn máy có dung tích xi-lanh dưới 50 cm3.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00045",
+    "query": "Người đủ bao nhiêu tuổi trở lên thì được lái xe mô tô hai bánh có dung tích xi-lanh từ 50 cm3 trở lên và ô tô chở người đến 9 chỗ ngồi?",
+    "reference": "Người đủ 18 tuổi trở lên.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00046",
+    "query": "Giấy phép lái xe hạng A1 được cấp cho người điều khiển loại xe nào?",
+    "reference": "Giấy phép lái xe hạng A1 cấp cho người lái xe mô tô hai bánh có dung tích xi-lanh từ 50 cm3 đến dưới 175 cm3 và người khuyết tật điều khiển xe mô tô ba bánh dùng cho người khuyết tật.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00047",
+    "query": "Giấy phép lái xe hạng B2 cấp cho người điều khiển loại xe nào?",
+    "reference": "Hạng B2 cấp cho người hành nghề lái xe điều khiển xe ô tô chở người đến 9 chỗ ngồi; xe ô tô tải, máy kéo có trọng tải dưới 3.500 kg.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00048",
+    "query": "Thời gian làm việc của người lái xe ô tô không được vượt quá bao nhiêu giờ trong một ngày và không được lái xe liên tục quá bao nhiêu giờ?",
+    "reference": "Thời gian làm việc của người lái xe ô tô không được quá 10 giờ trong một ngày và không được lái xe liên tục quá 4 giờ.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00049",
+    "query": "Thứ tự ưu tiên của các xe khi qua đường giao nhau từ bất kỳ hướng nào tới như thế nào?",
+    "reference": "Thứ tự ưu tiên: 1. Xe chữa cháy đi làm nhiệm vụ; 2. Xe quân sự, xe công an đi làm nhiệm vụ khẩn cấp, đoàn xe có xe cảnh sát dẫn đường; 3. Xe cứu thương đang thực hiện nhiệm vụ cấp cứu; 4. Xe hộ đê, xe đi làm nhiệm vụ khắc phục sự cố thiên tai, dịch bệnh; 5. Đoàn xe tang.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00050",
+    "query": "Người điều khiển xe mô tô hai bánh, xe gắn máy được chở tối đa mấy người trong trường hợp chở người bệnh đi cấp cứu, trẻ em dưới 14 tuổi hoặc áp giải người vi phạm pháp luật?",
+    "reference": "Được chở tối đa hai người.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00051",
+    "query": "Khi dừng xe, đỗ xe trên đường phố, bánh xe gần nhất không được cách xa lề đường, hè phố quá bao nhiêu mét?",
+    "reference": "Bánh xe gần nhất không được cách xa lề đường, hè phố quá 0,25 mét.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00052",
+    "query": "Người đi bộ phải đi ở vị trí nào trên đường giao thông?",
+    "reference": "Người đi bộ phải đi trên hè phố, lề đường; trường hợp đường không có hè phố, lề đường thì người đi bộ phải đi sát mép đường.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00053",
+    "query": "Trẻ em dưới bao nhiêu tuổi khi đi qua đường đô thị phải có người lớn dắt?",
+    "reference": "Trẻ em dưới 7 tuổi khi đi qua đường đô thị, đường thường xuyên có xe cơ giới qua lại phải có người lớn dắt.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00054",
+    "query": "Biển báo hiệu đường bộ được chia thành mấy nhóm chính?",
+    "reference": "Biển báo hiệu đường bộ gồm 5 nhóm: Biển báo cấm, biển báo nguy hiểm, biển hiệu lệnh, biển chỉ dẫn và biển phụ.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00055",
+    "query": "Khi vượt xe khác, các xe phải vượt về bên nào ngoại trừ một số trường hợp đặc biệt?",
+    "reference": "Khi vượt, các xe phải vượt về bên trái (trừ trường hợp xe phía trước có tín hiệu rẽ trái/đang rẽ trái, xe điện chạy giữa đường, hoặc xe chuyên dùng đang làm việc không thể vượt bên trái).",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00056",
+    "query": "Người điều khiển phương tiện không được bấm còi trong đô thị và khu đông dân cư vào khoảng thời gian nào?",
+    "reference": "Không được bấm còi trong thời gian từ 22 giờ đến 5 giờ sáng.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00057",
+    "query": "Khoảng cách tối thiểu mà người tham gia giao thông phải dừng lại tính từ ray gần nhất khi có tín hiệu đèn đỏ hoặc chuông báo tại đường ngang giao nhau với đường sắt là bao nhiêu?",
+    "reference": "Khoảng cách tối thiểu là 5 mét tính từ ray gần nhất.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00058",
+    "query": "Xe mô tô, xe gắn máy khi tham gia giao thông có được buông cả hai tay hoặc đi xe bằng một bánh không?",
+    "reference": "Không, đây là hành vi bị nghiêm cấm theo quy định tại Điều 30 Luật Giao thông đường bộ.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00059",
+    "query": "Tỷ lệ quỹ đất dành cho giao thông đô thị so với đất xây dựng đô thị phải bảo đảm từ bao nhiêu percent?",
+    "reference": "Tỷ lệ quỹ đất giao thông đô thị so với đất xây dựng đô thị phải bảo đảm từ 16% đến 26%.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00060",
+    "query": "Thời hạn của Giấy phép lái xe hạng B2, C, D, E được quy định như thế nào?",
+    "reference": "Giấy phép lái xe các hạng B2, C, D, E là giấy phép lái xe có thời hạn theo quy định của Bộ Giao thông vận tải.",
+    "group": "Luật giao thông đường bộ"
+  },
+  {
+    "id": "00061",
+    "query": "Luật Doanh nghiệp quy định về những loại hình doanh nghiệp nào?",
+    "reference": "Luật Doanh nghiệp quy định về công ty trách nhiệm hữu hạn, công ty cổ phần, công ty hợp danh và doanh nghiệp tư nhân.",
+    "group": "all"
+  },
+  {
+    "id": "00062",
+    "query": "Mục đích chính của việc ban hành Bộ luật Lao động là gì?",
+    "reference": "Bộ luật Lao động quy định tiêu chuẩn lao động, quyền, nghĩa vụ, trách nhiệm của người lao động, người sử dụng lao động và các tổ chức đại diện nhằm bảo vệ quyền và lợi ích hợp pháp của các bên.",
+    "group": "all"
+  },
+  {
+    "id": "00063",
+    "query": "Luật Giao thông đường bộ quy định về những phạm vi nào?",
+    "reference": "Luật quy định về quy tắc giao thông đường bộ; kết cấu hạ tầng giao thông đường bộ; phương tiện và người tham gia giao thông đường bộ; vận tải đường bộ và quản lý nhà nước về giao thông đường bộ.",
+    "group": "all"
+  },
+  {
+    "id": "00064",
+    "query": "Nếu tài liệu pháp luật không quy định cụ thể về một vấn đề thì kết luận như thế nào?",
+    "reference": "Không thể kết luận hoặc áp dụng quy định khi tài liệu pháp luật không cung cấp đủ thông tin hoặc không có quy định điều chỉnh.",
+    "group": "all"
+  },
+  {
+    "id": "00065",
+    "query": "Người lao động có quyền đơn phương chấm dứt hợp đồng lao động không xác định thời hạn không?",
+    "reference": "Có, người lao động làm việc theo hợp đồng lao động không xác định thời hạn có quyền đơn phương chấm dứt hợp đồng lao động nhưng phải báo trước ít nhất 45 ngày.",
+    "group": "all"
+  },
+  {
+    "id": "00066",
+    "query": "Cơ quan nào có thẩm quyền ban hành Luật Giao thông đường bộ tại Việt Nam?",
+    "reference": "Quốc hội nước Cộng hòa xã hội chủ nghĩa Việt Nam.",
+    "group": "all"
+  },
+  {
+    "id": "00067",
+    "query": "Người điều khiển xe ô tô có được phép lái xe liên tục quá 4 giờ không?",
+    "reference": "Không, người lái xe ô tô không được lái xe liên tục quá 4 giờ theo quy định của Luật Giao thông đường bộ.",
+    "group": "all"
+  },
+  {
+    "id": "00068",
+    "query": "Công ty TNHH hai thành viên trở lên có số lượng thành viên tối đa là bao nhiêu?",
+    "reference": "Số lượng thành viên của công ty TNHH hai thành viên trở lên không vượt quá 50 thành viên.",
+    "group": "all"
+  },
+  {
+    "id": "00069",
+    "query": "Bộ luật Lao động quy định người lao động từ đủ bao nhiêu tuổi trở lên?",
+    "reference": "Người lao động là người từ đủ 15 tuổi trở lên có khả năng lao động và làm việc theo hợp đồng lao động.",
+    "group": "all"
+  },
+  {
+    "id": "00070",
+    "query": "Các xe ưu tiên như xe chữa cháy, xe cứu thương khi đi làm nhiệm vụ có bị hạn chế tốc độ không?",
+    "reference": "Không, các xe được quyền ưu tiên khi đi làm nhiệm vụ phát tín hiệu ưu tiên thì không bị hạn chế tốc độ.",
+    "group": "all"
+  },
+  {
+    "id": "00071",
+    "query": "Mức lương tối thiểu vùng do cơ quan nào công bố?",
+    "reference": "Chính phủ công bố mức lương tối thiểu vùng trên cơ sở khuyến nghị của Hội đồng tiền lương quốc gia.",
+    "group": "all"
+  },
+  {
+    "id": "00072",
+    "query": "Doanh nghiệp tư nhân có được phát hành bất kỳ loại chứng khoán nào không?",
+    "reference": "Doanh nghiệp tư nhân không được phát hành bất kỳ loại chứng khoán nào.",
+    "group": "all"
+  },
+  {
+    "id": "00073",
+    "query": "Người tham gia giao thông đường bộ phải đi về phía bên nào theo chiều đi của mình?",
+    "reference": "Người tham gia giao thông phải đi bên phải theo chiều đi của mình, đi đúng làn đường, phần đường quy định.",
+    "group": "all"
+  },
+  {
+    "id": "00074",
+    "query": "Tiền lương trả cho người lao động làm việc vào ngày nghỉ lễ, tết ít nhất bằng bao nhiêu percent?",
+    "reference": "Ít nhất bằng 300% đơn giá tiền lương hoặc tiền lương theo công việc đang làm (chưa kể tiền lương ngày lễ, tết đối với người hưởng lương ngày).",
+    "group": "all"
+  },
+  {
+    "id": "00075",
+    "query": "Tổ chức nào đại diện bảo vệ quyền và lợi ích hợp pháp của tập thể lao động tại cơ sở?",
+    "reference": "Ban chấp hành công đoàn cơ sở (hoặc công đoàn cấp trên trực tiếp cơ sở ở nơi chưa thành lập công đoàn cơ sở).",
+    "group": "all"
+  },
+  {
+    "id": "00076",
+    "query": "Chữ ký số có được công nhận là con dấu của doanh nghiệp không?",
+    "reference": "Có, Luật Doanh nghiệp 2020 chính thức công nhận chữ ký số là dấu của doanh nghiệp.",
+    "group": "all"
+  },
+  {
+    "id": "00077",
+    "query": "Người lái xe mô tô hai bánh có dung tích xi-lanh từ 175 cm3 trở lên cần có giấy phép lái xe hạng nào?",
+    "reference": "Cần có Giấy phép lái xe hạng A2.",
+    "group": "all"
+  },
+  {
+    "id": "00078",
+    "query": "Người sử dụng lao động có được giữ bản chính giấy tờ tùy thân của người lao động khi giao kết hợp đồng không?",
+    "reference": "Không, đây là hành vi bị cấm khi giao kết, thực hiện hợp đồng lao động.",
+    "group": "all"
+  },
+  {
+    "id": "00079",
+    "query": "Công ty cổ phần phải có tối thiểu bao nhiêu cổ đông?",
+    "reference": "Công ty cổ phần phải có tối thiểu 03 cổ đông và không hạn chế số lượng tối đa.",
+    "group": "all"
+  },
+  {
+    "id": "00080",
+    "query": "Khi có tín hiệu đèn giao thông màu vàng nhấp nháy, người điều khiển phương tiện phải xử lý như thế nào?",
+    "reference": "Người điều khiển phương tiện được đi nhưng phải giảm tốc độ, chú ý quan sát, nhường đường cho người đi bộ qua đường.",
+    "group": "all"
+  },
+  {
+    "id": "00081",
+    "query": "Hợp đồng lao động bằng lời nói được áp dụng cho loại công việc nào?",
+    "reference": "Hợp đồng lao động bằng lời nói áp dụng đối với công việc tạm thời có thời hạn dưới 03 tháng.",
+    "group": "all"
+  },
+  {
+    "id": "00082",
+    "query": "Cá nhân thực tế nắm giữ từ bao nhiêu percent vốn điều lệ doanh nghiệp được xem là Chủ sở hữu hưởng lợi?",
+    "reference": "Nắm giữ trực tiếp hoặc gián tiếp từ 25% vốn điều lệ trở lên.",
+    "group": "all"
+  },
+  {
+    "id": "00083",
+    "query": "Phương tiện giao thông cơ giới đường bộ gồm những loại phương tiện nào?",
+    "reference": "Gồm xe ô tô; máy kéo; rơ moóc hoặc sơ mi rơ moóc; xe mô tô hai bánh; xe mô tô ba bánh; xe gắn máy (kể cả xe máy điện) và các loại xe tương tự.",
+    "group": "all"
+  },
+  {
+    "id": "00084",
+    "query": "Thời gian nghỉ giữa giờ đối với người lao động làm việc liên tục 08 giờ ban ngày là bao nhiêu phút?",
+    "reference": "Được nghỉ giữa giờ ít nhất 30 phút và tính vào thời giờ làm việc.",
+    "group": "all"
+  },
+  {
+    "id": "00085",
+    "query": "Tên doanh nghiệp bằng tiếng Việt phải bao gồm hai thành tố nào?",
+    "reference": "Gồm loại hình doanh nghiệp và tên riêng.",
+    "group": "all"
+  },
+  {
+    "id": "00086",
+    "query": "Người điều khiển xe đạp được chở tối đa mấy người?",
+    "reference": "Người điều khiển xe đạp chỉ được chở một người, trừ trường hợp chở thêm một trẻ em dưới 7 tuổi thì được chở tối đa hai người.",
+    "group": "all"
+  },
+  {
+    "id": "00087",
+    "query": "Hành vi ngược đãi, quấy rối tình dục tại nơi làm việc có bị nghiêm cấm trong pháp luật lao động không?",
+    "reference": "Có, đây là hành vi bị nghiêm cấm theo quy định của Bộ luật Lao động.",
+    "group": "all"
+  },
+  {
+    "id": "00088",
+    "query": "Doanh nghiệp xã hội có bắt buộc phải dùng lợi nhuận sau thuế để tái đầu tư không?",
+    "reference": "Có, doanh nghiệp xã hội phải sử dụng ít nhất 51% tổng lợi nhuận sau thuế hằng năm để tái đầu tư nhằm thực hiện mục tiêu xã hội, môi trường đã đăng ký.",
+    "group": "all"
+  },
+  {
+    "id": "00089",
+    "query": "Hành lang an toàn đường bộ là gì?",
+    "reference": "Là dải đất dọc hai bên đất của đường bộ, tính từ mép ngoài đất của đường bộ ra hai bên để bảo đảm an toàn giao thông đường bộ.",
+    "group": "all"
+  },
+  {
+    "id": "00090",
+    "query": "Thời hạn người lao động tạm thời chuyển làm công việc khác so với hợp đồng không quá bao nhiêu ngày làm việc cộng dồn trong một năm?",
+    "reference": "Không quá 60 ngày làm việc cộng dồn trong một năm, trừ trường hợp được sự đồng ý của người lao động.",
+    "group": "all"
+  },
+  {
+    "id": "00091",
+    "query": "Nguồn vốn điều lệ của công ty TNHH một thành viên do ai đăng ký góp?",
+    "reference": "Do chủ sở hữu công ty cam kết góp và ghi trong Điều lệ công ty.",
+    "group": "all"
+  },
+  {
+    "id": "00092",
+    "query": "Người ngồi trên xe ô tô có trang bị dây an toàn tại hàng ghế phía trước có bắt buộc phải thắt dây an toàn không?",
+    "reference": "Có, người lái xe và người ngồi hàng ghế phía trước trong xe ô tô có trang bị dây an toàn bắt buộc phải thắt dây an toàn.",
+    "group": "all"
+  },
+  {
+    "id": "00093",
+    "query": "Trợ cấp thôi việc áp dụng cho người lao động đã làm việc thường xuyên từ đủ bao nhiêu tháng trở lên?",
+    "reference": "Áp dụng cho người lao động đã làm việc thường xuyên từ đủ 12 tháng trở lên.",
+    "group": "all"
+  },
+  {
+    "id": "00094",
+    "query": "Việc bãi bỏ thủ tục thông báo mẫu con dấu doanh nghiệp mang lại lợi ích gì?",
+    "reference": "Giúp cắt giảm thủ tục hành chính, tiết kiệm thời gian, chi phí gia nhập thị trường cho doanh nghiệp.",
+    "group": "all"
+  },
+  {
+    "id": "00095",
+    "query": "Nơi đường giao nhau không có báo hiệu đi theo vòng xuyến, người điều khiển phương tiện phải nhường đường như thế nào?",
+    "reference": "Phải nhường đường cho xe đi đến từ bên phải.",
+    "group": "all"
+  },
+  {
+    "id": "00096",
+    "query": "Người lao động có được trả lương trực tiếp, đầy đủ và đúng thời hạn không?",
+    "reference": "Có, người lao động được trả lương trực tiếp, đầy đủ và đúng thời hạn theo nguyên tắc trả lương của Bộ luật Lao động.",
+    "group": "all"
+  },
+  {
+    "id": "00097",
+    "query": "Giấy chứng nhận đăng ký doanh nghiệp bị thu hồi trong trường hợp nào?",
+    "reference": "Bị thu hồi khi nội dung kê khai trong hồ sơ đăng ký doanh nghiệp là giả mạo, doanh nghiệp do những người bị cấm thành lập, hoặc ngừng hoạt động 01 năm không báo cáo.",
+    "group": "all"
+  },
+  {
+    "id": "00098",
+    "query": "Người điều khiển xe mô tô hai bánh, xe gắn máy có được sử dụng ô (dù), điện thoại di động khi đang chạy xe không?",
+    "reference": "Không, đây là hành vi bị nghiêm cấm đối với người điều khiển xe mô tô, xe gắn máy.",
+    "group": "all"
+  },
+  {
+    "id": "00099",
+    "query": "Thỏa ước lao động tập thể doanh nghiệp có thời hạn tối đa là bao nhiêu năm?",
+    "reference": "Thời hạn từ 01 năm đến 03 năm (đối với doanh nghiệp lần đầu ký kết có thể dưới 01 năm).",
+    "group": "all"
+  },
+  {
+    "id": "00100",
+    "query": "Biển báo hiệu cấm trong giao thông đường bộ biểu thị điều gì?",
+    "reference": "Biển báo cấm biểu thị các điều cấm mà người tham gia giao thông không được vi phạm.",
+    "group": "all"
   }
 ]
