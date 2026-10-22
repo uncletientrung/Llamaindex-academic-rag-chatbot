@@ -80,6 +80,22 @@
                     <p id="mainLoadingMessage">
                         Vui lòng chờ trong giây lát...
                     </p>
+
+                    <div id="chunkProgressWrapper" class="chunk-progress-wrapper"
+                        style="display: none;">
+
+                        <div class="chunk-progress-info">
+                            <span id="chunkProgressLabel">Đang xử lý chunks...</span>
+                            <strong id="chunkProgressPercent">0%</strong>
+                        </div>
+
+                        <div class="chunk-progress-track">
+                            <div id="chunkProgressBar" class="chunk-progress-bar"
+                                style="width: 0%;"></div>
+                        </div>
+
+                        <p id="chunkProgressCount">Đã xử lý 0/0 chunks</p>
+                    </div>
                 </div>
             </div>
 

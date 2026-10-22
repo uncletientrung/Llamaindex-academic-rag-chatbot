@@ -1,13 +1,12 @@
 import csv
 import json
 from pathlib import Path
-
+import uuid
 from test import RAGService
-from evaluators import build_evaluators
+from evaluation.response_evaluation.evaluators import build_evaluators
 
 
 DATASET_PATH = Path("evaluation/response_evaluation/dataset.json")
-
 RESULT_PATH = Path("evaluation/response_evaluation/results/evaluation.csv")
     
 def main():
@@ -22,6 +21,8 @@ def main():
     rows = []
 
     for i, item in enumerate(dataset, start=1):
+        query_id = item["id"]
+        eval_id = str(uuid.uuid4())
         query = item["query"]
         reference = item.get("reference")
         group = item.get("group", "all") # Nếu không có thuộc tính group thì trả về all
@@ -38,6 +39,8 @@ def main():
             response = result["response"]
 
             row = {
+                "eval_id": eval_id,
+                "query_id": query_id,
                 "query": query,
                 "reference": reference or "",
                 "response": response,
@@ -86,7 +89,7 @@ def main():
                     response=response,
                     reference=reference,
                 )
-                row["correctness_score"] = eval_result.score
+                row["correctness_score"] = eval_result.score    
                 row["correctness_feedback"] = eval_result.feedback
 
                 #Semantic Similarity
@@ -107,6 +110,8 @@ def main():
         except Exception as exc:
             print(f"Lỗi khi đánh giá câu hỏi: {exc}")
             rows.append({
+                "eval_id": eval_id,
+                "query_id": query_id,
                 "query": query,
                 "reference": reference or "",
                 "status": "error",
