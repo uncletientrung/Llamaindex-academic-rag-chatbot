@@ -9,7 +9,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from llama_index.core.evaluation import RetrieverEvaluator
 
-from test import RAGService
+from ragservice import RAGService
 
 
 DATASET_PATH = Path(

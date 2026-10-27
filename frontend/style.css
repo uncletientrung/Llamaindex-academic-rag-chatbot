@@ -1653,46 +1653,109 @@ button {
 
 /* Khu vực upload vàng */
 
+/* Khu vực upload tài liệu - nhỏ gọn tone vàng */
 .document-upload-zone {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 125px;
-    padding: 20px;
-    border: 1px dashed #E0AD00;
-    border-radius: 10px;
+
+    padding: 18px 12px;
+    margin-top: 12px;
+
     background: #FFFBEB;
-    text-align: center;
+    border: 1.5px dashed #E0AD00;
+    border-radius: 10px;
+
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    text-align: center;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        transform 0.25s ease;
 }
 
 .document-upload-zone:hover {
-    border-color: #D9A300;
     background: #FFF4CC;
+    border-color: #D9A300;
+    transform: translateY(-1px);
 }
 
-.document-upload-zone > i {
-    margin-bottom: 2px;
+/* Icon upload nhỏ lại */
+.upload-main-icon {
+    font-size: 24px;
     color: #B78100;
-    font-size: 1.55rem;
+    margin-bottom: 0;
 }
 
-.document-upload-zone strong {
-    color: var(--doc-text);
-    font-size: 0.88rem;
+/* Tiêu đề */
+.document-upload-zone > strong {
+    color: #594719;
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.document-upload-zone span {
-    color: var(--doc-muted);
-    font-size: 0.76rem;
-    line-height: 1.5;
+/* Badge định dạng và dung lượng */
+.upload-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 0;
+}
+
+.upload-format,
+.upload-size-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    padding: 5px 8px;
+    border-radius: 7px;
+
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.upload-format {
+    color: #78652E;
+    background: #F7F0D9;
+}
+
+.upload-size-badge {
+    color: #946200;
+    background: #FFF1BD;
+    border: 1px solid #F0D77A;
+}
+
+.upload-size-badge i {
+    font-size: 11px;
+}
+
+.upload-hint {
+    color: #998B65;
+    font-size: 11px;
+    line-height: 1.4;
 }
 
 .document-upload-input {
     display: none;
+}
+
+@media (max-width: 480px) {
+    .document-upload-zone {
+        padding: 14px 8px;
+    }
+
+    .upload-meta {
+        flex-direction: column;
+        align-items: center;
+    }
 }
 
 /* Trạng thái rỗng */
@@ -1990,3 +2053,5 @@ button {
     font-size: 12px;
     color: #64748b;
 }
+
+

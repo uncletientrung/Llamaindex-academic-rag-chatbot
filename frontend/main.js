@@ -376,11 +376,25 @@ function renderDocumentGroups() {
                         ${filesHTML}
                     </div>
 
+
                     <label class="document-upload-zone">
-                        <i class="fas fa-cloud-upload-alt"></i>
+                        <i class="fas fa-cloud-upload-alt upload-main-icon"></i>
+
                         <strong>Nhấn để chọn tài liệu</strong>
-                        <span>
-                            Hỗ trợ PDF, DOCX, TXT<br>
+
+                        <div class="upload-meta">
+                            <span class="upload-format">
+                                <i class="fas fa-file-alt"></i>
+                                Hỗ trợ PDF, DOCX, TXT
+                            </span>
+
+                            <span class="upload-size-badge">
+                                <i class="fas fa-weight-hanging"></i>
+                                Tối đa 50 MB/tệp
+                            </span>
+                        </div>
+
+                        <span class="upload-hint">
                             Có thể chọn nhiều tệp cùng lúc
                         </span>
 
@@ -392,6 +406,7 @@ function renderDocumentGroups() {
                             multiple
                         >
                     </label>
+
                 </div>
             </article>
         `;
@@ -594,6 +609,7 @@ async function handleDocumentUpload(event) {
     if (files.length === 0) return;
 
     const allowedExtensions = ["pdf", "docx", "txt"];
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
     showMainLoading(
         "Đang upload tài liệu và cập nhật lại RAG",
@@ -606,6 +622,13 @@ async function handleDocumentUpload(event) {
 
         if (!allowedExtensions.includes(extension)) { // Kiểm tra định dạng
             alert(`File "${file.name}" không được hỗ trợ.`);
+            continue;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            showToast(
+                `File "${file.name}" vượt quá giới hạn 50 MB.`,
+                "error"
+            );
             continue;
         }
 

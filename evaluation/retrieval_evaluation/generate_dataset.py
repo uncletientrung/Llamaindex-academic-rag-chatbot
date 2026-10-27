@@ -6,7 +6,7 @@ from typing import Any
 from llama_index.core import Settings
 from llama_index.core.evaluation.dataset_generation import DatasetGenerator
 
-from test import RAGService
+from ragservice import RAGService
 
 
 DATASET_PATH = Path("evaluation/retrieval_evaluation/dataset.json")

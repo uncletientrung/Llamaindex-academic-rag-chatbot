@@ -1,4 +1,5 @@
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 ALL_GROUPS = "all" # value của khi chọn tất cả nhóm
 
 DEFAULT_CHUNK_SIZE = 800

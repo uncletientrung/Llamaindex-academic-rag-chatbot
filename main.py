@@ -7,10 +7,11 @@ from pydantic import BaseModel
 from typing import Optional
 import shutil
 
-from test import RAGService
+from ragservice import RAGService
 from chathistory import ChatHistoryStore
 from constants import (
     ALL_GROUPS,
+    MAX_FILE_SIZE,
     SUPPORTED_EXTENSIONS,
 )
 
@@ -171,6 +172,12 @@ async def upload_file(file: UploadFile = File(...), group: str = Form(...)):
         raise HTTPException(
             status_code=400,
             detail="Định dạng file không được hỗ trợ.",
+        )
+    
+    if file.size is not None and file.size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="File vượt quá giới hạn 50 MB."
         )
 
     # Lưu file thật xuống máy

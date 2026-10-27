@@ -42,11 +42,17 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 └── evaluation/              # Dataset, script và kết quả đánh giá
 ```
 
-## Yêu cầu
+## Công cụ cần thiết
 
-- Windows 10/11 (các lệnh bên dưới dành cho PowerShell), Python 3.10 trở lên
-- [Ollama](https://ollama.com/) đã cài đặt và đang chạy
-- Git (nếu clone dự án)
+- Python 3.10 trở lên
+- LlamaIndex
+- [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:3b`
+- Embedding model `AITeamVN/Vietnamese_Embedding` (được tải từ Hugging Face khi chạy lần đầu)
+- Vector store của LlamaIndex (`SimpleVectorStore`), lưu index cục bộ trong `storage/`
+- FastAPI và Uvicorn cho backend; giao diện hiện tại dùng HTML, CSS và JavaScript
+- Git để clone/mã nguồn; GitHub chỉ cần nếu muốn lưu trữ hoặc chia sẻ repository
+
+> Streamlit có trong `requirements.txt` nhưng ứng dụng hiện tại không dùng Streamlit; giao diện web kết nối tới backend FastAPI.
 
 ## Cài đặt
 

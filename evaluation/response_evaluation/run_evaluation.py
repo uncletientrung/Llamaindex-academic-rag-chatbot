@@ -3,7 +3,7 @@ import json
 import uuid
 from pathlib import Path
 
-from test import RAGService
+from ragservice import RAGService
 from evaluation.response_evaluation.evaluators import build_evaluators
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
