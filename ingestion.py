@@ -100,8 +100,6 @@ class DocumentIngestionPipeline:
 
         for node in nodes:
             node.metadata["folder_name"] = folder_name 
-
-            pprint(node)
         return nodes
 
     def get_storage(self): # Hàm định nghĩa storage

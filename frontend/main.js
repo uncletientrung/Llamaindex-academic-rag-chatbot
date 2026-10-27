@@ -1082,9 +1082,14 @@ async function sendQuestion() {
         const CHARS_PER_STEP = 5; // Số ký tự hiển thị mỗi lần
 
         async function processEvent(block) {
+            console.log(block);
+            
             const dataLine = block
                 .split(/\r?\n/)
                 .find(line => line.startsWith("data:"));
+
+            console.log(dataLine);
+            
 
             if (!dataLine) return;
 
@@ -1092,6 +1097,8 @@ async function sendQuestion() {
 
             if (event.type === "sources") {
                 answerSources = event.sources || [];
+                console.log(answerSources);
+                
                 return;
             }
 
@@ -1223,6 +1230,10 @@ loadDocumentGroups();
 
 // Tải lịch sử cuộc trò chuyện ban đầu
 loadConversations();
+
+// ============================================================
+// 10. CÁC HÀM XỬ LÝ HIGHLIGHT
+// ============================================================
 
 
 function renderAnswerSources(sources, message) {

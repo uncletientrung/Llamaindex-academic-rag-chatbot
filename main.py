@@ -52,9 +52,6 @@ class ChatResponse(BaseModel):
 class CreateGroupRequest(BaseModel):
     name: str
 
-class SourceRequest(BaseModel):
-    question: str
-    group: str = "all"
 
 @app.get("/")
 def home():
@@ -340,31 +337,6 @@ def delete_conversation(conversation_id: str):
     chat_storage.delete_conversation(conversation_id)
     return {"message": "Đã xóa cuộc trò chuyện."}
 
-
-@app.post("/sources")
-def get_sources(request: SourceRequest):
-    try:
-        sources = rag_engine.get_sources(
-            question=request.question,
-            group=request.group,
-        )
-
-        return {"sources": sources}
-
-    except ValueError as ex:
-        raise HTTPException(
-            status_code=400,
-            detail=str(ex),
-        )
-
-    except Exception:
-        import logging
-        logging.exception("Lỗi lấy nguồn RAG")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Không thể lấy nguồn tài liệu.",
-        )
 
 @app.get("/documents/pdf")
 def get_pdf(group: str, filename: str):

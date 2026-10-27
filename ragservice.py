@@ -120,7 +120,7 @@ class RAGService:
                 yield {"type": "token", "text": chunk}
             return
 
-        yield {
+        yield { # Trả về các nodes sau khi rerank cho llm trả lời
             "type": "sources",
             "sources": self.extract_sources(nodes),
         }
@@ -179,7 +179,7 @@ class RAGService:
 
         self.rebuild_index(rebuild_groups={group_dir.name})
 
-    def extract_sources(self, nodes): # Lấy cá node để highlight
+    def extract_sources(self, nodes): # Lấy các tt từ node để highlight
         sources = []
         seen = set()
 
@@ -189,18 +189,11 @@ class RAGService:
 
             source = {
                 "text": node.get_content(),
-                "score": item.score,
-                "file_name": (
-                    metadata.get("source_file")
-                    or metadata.get("file_name")
-                ),
+                "score":  float(item.score) if item.score is not None else None,
+                "file_name": metadata.get("file_name"),
                 "file_path": metadata.get("file_path"),
                 "group": metadata.get("folder_name"),
-                "page": (
-                    metadata.get("source_page")
-                    or metadata.get("page_label")
-                    or metadata.get("page_number")
-                ),
+                "page": metadata.get("page_label"),
             }
 
             key = (source["file_path"], source["page"], source["text"])
@@ -211,35 +204,6 @@ class RAGService:
             sources.append(source)
 
         return sources
-
-    def get_sources(
-        self,
-        question: str,
-        group: str = ALL_GROUPS,
-    ):
-        question = question.strip()
-
-        if not question:
-            raise ValueError("Câu hỏi không được để trống.")
-
-        if group != ALL_GROUPS:
-            query_engine = self.query_engines.get(group)
-
-            if query_engine is None:
-                raise ValueError(
-                    f"Không tìm thấy index cho nhóm '{group}'."
-                )
-        else:
-            query_engine = self.router_query_engine
-
-            if query_engine is None:
-                return []
-
-        nodes = query_engine.retrieve(
-            QueryBundle(query_str=question)
-        )
-
-        return self.extract_sources(nodes)
 
     # Các hàm sử dụng để đánh giá
     def answer_with_context(self,question: str,group: str = ALL_GROUPS,):
