@@ -6,7 +6,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional
 import shutil
-
+import json
+from fastapi.responses import FileResponse
 from ragservice import RAGService
 from chathistory import ChatHistoryStore
 from constants import (
@@ -50,6 +51,10 @@ class ChatResponse(BaseModel):
 
 class CreateGroupRequest(BaseModel):
     name: str
+
+class SourceRequest(BaseModel):
+    question: str
+    group: str = "all"
 
 @app.get("/")
 def home():
@@ -116,17 +121,21 @@ def chat(request: ChatRequest):
 
     def generate_response(): # Hàm trong hàm
             full_response = ""
-            for chunk in rag_engine.ask_stream(question,group, history):
-                full_response += chunk
-                yield chunk # Giá trị trả về liên tục
+            for event in rag_engine.ask_stream(question,group, history):
+                if event["type"] == "token":
+                    full_response += event["text"]
+
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                 
             if full_response:
                 chat_storage.add_message(conversation_id, "assistant",full_response)
     return StreamingResponse(
         generate_response(),
-        media_type="text/plain; charset=utf-8",
+        media_type="text/event-stream; charset=utf-8",
         headers={   
-            "X-Conversation-ID": conversation_id
+            "X-Conversation-ID": conversation_id,
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
         }
     )
 
@@ -330,3 +339,79 @@ def delete_conversation(conversation_id: str):
 
     chat_storage.delete_conversation(conversation_id)
     return {"message": "Đã xóa cuộc trò chuyện."}
+
+
+@app.post("/sources")
+def get_sources(request: SourceRequest):
+    try:
+        sources = rag_engine.get_sources(
+            question=request.question,
+            group=request.group,
+        )
+
+        return {"sources": sources}
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=400,
+            detail=str(ex),
+        )
+
+    except Exception:
+        import logging
+        logging.exception("Lỗi lấy nguồn RAG")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Không thể lấy nguồn tài liệu.",
+        )
+
+@app.get("/documents/pdf")
+def get_pdf(group: str, filename: str):
+    if (
+        not group
+        or group in {".", ".."}
+        or "/" in group
+        or "\\" in group
+        or not filename
+        or Path(filename).name != filename
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Đường dẫn tài liệu không hợp lệ.",
+        )
+
+    group_dir = (DATA_DIR / group).resolve()
+
+    if group_dir.parent != DATA_DIR or not group_dir.is_dir():
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy nhóm tài liệu.",
+        )
+
+    file_path = (group_dir / filename).resolve()
+
+    if file_path.parent != group_dir:
+        raise HTTPException(
+            status_code=400,
+            detail="Đường dẫn tài liệu không hợp lệ.",
+        )
+
+    if file_path.suffix.lower() != ".pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Tệp không phải PDF.",
+        )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy tài liệu.",
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=filename,
+        content_disposition_type="inline",
+    )

@@ -307,31 +307,31 @@
     </div>
 
     <!-- ================= PDF VIEWER MODAL ================= -->
-    <div id="pdfViewerModal" class="modal">
+    <div id="pdfViewerModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="modal-content pdf-modal-content">
             <div class="modal-header">
                 <h3>
                     <i class="fas fa-file-pdf"></i>
-                    PDF Viewer - Trang
-                    <span id="pdfCurrentPage">1</span>
+                    <span id="pdfViewerTitle">PDF Viewer</span>
                     <small>(Highlight từ nguồn RAG)</small>
                 </h3>
 
-                <button class="modal-close" aria-label="Đóng">
+                <button class="modal-close" aria-label="Đóng PDF viewer">
                     &times;
                 </button>
             </div>
 
             <div class="modal-body pdf-modal-body">
-                <div id="pdfPageContainer">
-                    <canvas id="pdfCanvas"></canvas>
-                    <div id="textLayer" class="textLayer"></div>
-                </div>
+                <div id="pdfPages" class="pdf-pages"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    </script>
     <script src="main.js"></script>
 
 </body>

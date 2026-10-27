@@ -88,31 +88,42 @@ class RAGService:
     def ask_stream(self, question: str, group: str = ALL_GROUPS, history: list | None = None,):
         question = question.strip()
         if not question:
-            yield "Vui lòng nhập câu hỏi."
+            yield {"type": "sources", "sources": []}
+            yield {"type": "token", "text": "Vui lòng nhập câu hỏi."}
             return
         
         if group != ALL_GROUPS: # Chế độ chọn 1 nhóm riêng
             query_engine = self.query_engines.get(group)
             if query_engine is None:
-                yield f"Không tìm thấy index cho nhóm '{group}'."
+                yield {"type": "sources", "sources": []}
+                yield {
+                    "type": "token",
+                    "text": f"Không tìm thấy index cho nhóm '{group}'.",
+                }
                 return
             
         else: # Chế độ tất cả folder
             query_engine = self.router_query_engine
             if query_engine is None:
-                yield "Chưa có tài liệu nào được tải lên."
+                yield {"type": "sources", "sources": []}
+                yield {"type": "token", "text": "Chưa có tài liệu nào được tải lên."}
                 return
 
- 
         query_bundle = QueryBundle(query_str=question) # SBERT Rerank cần lấy câu hỏi qua query_bundle.query_str để so sánh với từng đoạn tài liệu và xếp hạng lại.
         # Rerank bằng câu hỏi trước rồi mới dùng retrieval_query
         
-
         nodes = query_engine.retrieve(query_bundle)
   
         if not nodes:
-            yield from self.fallback_stream(question)
+            yield {"type": "sources", "sources": []}
+            for chunk in self.fallback_stream(question):
+                yield {"type": "token", "text": chunk}
             return
+
+        yield {
+            "type": "sources",
+            "sources": self.extract_sources(nodes),
+        }
 
         recent_history = (history or [])[-10:] # Lấy 10 cuộc hội thoại gần nhất
         history_text = ""
@@ -143,7 +154,7 @@ class RAGService:
         # response = query_engine.query(question)
         for chunk in response.response_gen:
             print(chunk)
-            yield chunk
+            yield {"type": "token", "text": chunk}
 
     def fallback_stream(self, question: str):
         prompt = FALLBACK_PROMPT.format(question=question)
@@ -161,8 +172,6 @@ class RAGService:
         
         self.rebuild_index(rebuild_groups={group_dir.name})
             
-        
-
     def delete_document(self, file_path: str):
         target = Path(file_path).resolve()
         group_dir = target.parent
@@ -170,9 +179,69 @@ class RAGService:
 
         self.rebuild_index(rebuild_groups={group_dir.name})
 
+    def extract_sources(self, nodes): # Lấy cá node để highlight
+        sources = []
+        seen = set()
+
+        for item in nodes:
+            node = item.node
+            metadata = node.metadata or {}
+
+            source = {
+                "text": node.get_content(),
+                "score": item.score,
+                "file_name": (
+                    metadata.get("source_file")
+                    or metadata.get("file_name")
+                ),
+                "file_path": metadata.get("file_path"),
+                "group": metadata.get("folder_name"),
+                "page": (
+                    metadata.get("source_page")
+                    or metadata.get("page_label")
+                    or metadata.get("page_number")
+                ),
+            }
+
+            key = (source["file_path"], source["page"], source["text"])
+            if key in seen:
+                continue
+
+            seen.add(key)
+            sources.append(source)
+
+        return sources
+
+    def get_sources(
+        self,
+        question: str,
+        group: str = ALL_GROUPS,
+    ):
+        question = question.strip()
+
+        if not question:
+            raise ValueError("Câu hỏi không được để trống.")
+
+        if group != ALL_GROUPS:
+            query_engine = self.query_engines.get(group)
+
+            if query_engine is None:
+                raise ValueError(
+                    f"Không tìm thấy index cho nhóm '{group}'."
+                )
+        else:
+            query_engine = self.router_query_engine
+
+            if query_engine is None:
+                return []
+
+        nodes = query_engine.retrieve(
+            QueryBundle(query_str=question)
+        )
+
+        return self.extract_sources(nodes)
 
     # Các hàm sử dụng để đánh giá
-    
     def answer_with_context(self,question: str,group: str = ALL_GROUPS,):
         question = question.strip()
 

@@ -28,6 +28,7 @@ from constants import (
     DEFAULT_CHUNK_OVERLAP,
     EMBEDDING_MODEL
 )
+from rich.pretty import pprint
 
 class DocumentIngestionPipeline:
     def __init__(self, data_dir="data"):
@@ -99,6 +100,8 @@ class DocumentIngestionPipeline:
 
         for node in nodes:
             node.metadata["folder_name"] = folder_name 
+
+            pprint(node)
         return nodes
 
     def get_storage(self): # Hàm định nghĩa storage

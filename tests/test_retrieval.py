@@ -19,11 +19,6 @@ from llama_index.core.extractors import (
     KeywordExtractor,
 )
 from llama_index.extractors.entity import EntityExtractor
-from src.promts.promt_extractor import (
-    TITLE_NODE_PROMT,
-    TITLE_COMBINE_PROMT,
-    KEYWORD_PROMT,
-)
 
 from src.retrieval.retriever import create_retriever
 from src.retrieval.reranker import create_reranker
@@ -59,6 +54,7 @@ for folder in ig.get_subfolders():
 
     nodes = ig.get_nodes(documents)
     for i, node in enumerate(nodes, start=1):
+        pprint(node)
         print(f"Node {i}:")
         print("document_title:", node.metadata.get("document_title"))
         print("-" * 50)

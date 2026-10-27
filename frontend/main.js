@@ -113,6 +113,79 @@ function showToast(message, type = "error") {
     }, 3500);
 }
 
+function showModal(modal) {
+    modal.returnFocusElement = document.activeElement;
+    modal.setAttribute("aria-hidden", "false");
+    modal.classList.add("show");
+    document.body.classList.add("modal-open");
+    modal.querySelector(".modal-close")?.focus();
+}
+
+function hideModal(modal) {
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+
+    if (modal.id === "pdfViewerModal") {
+        openSourcePdf.renderId = (openSourcePdf.renderId || 0) + 1;
+    }
+
+    if (!document.querySelector(".modal.show")) {
+        document.body.classList.remove("modal-open");
+    }
+
+    if (modal.returnFocusElement instanceof HTMLElement &&
+        modal.returnFocusElement.isConnected
+    ) {
+        modal.returnFocusElement.focus();
+    }
+}
+
+document.querySelectorAll(".modal").forEach(modal => {
+    modal.querySelector(".modal-close")?.addEventListener("click", () => {
+        hideModal(modal);
+    });
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) {
+            hideModal(modal);
+        }
+    });
+});
+
+document.addEventListener("keydown", event => {
+    const modal = document.querySelector(".modal.show");
+    if (!modal) return;
+
+    if (event.key === "Escape") {
+        hideModal(modal);
+        return;
+    }
+
+    if (event.key !== "Tab") return;
+
+    const focusableElements = Array.from(modal.querySelectorAll(
+        'button:not([disabled]), a[href], input:not([disabled]), ' +
+        'select:not([disabled]), textarea:not([disabled]), ' +
+        '[tabindex]:not([tabindex="-1"])'
+    )).filter(element => element.getClientRects().length > 0);
+
+    if (!focusableElements.length) {
+        event.preventDefault();
+        return;
+    }
+
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+});
+
 // Hiển thị hộp thoại xác nhận và trả về true/false
 function confirmDialog(message) {
     return new Promise(resolve => {
@@ -695,8 +768,12 @@ function appendMessage(content, role) {
     messageContent.className = "message-content";
     messageContent.textContent = content;
 
+    const messageBody = document.createElement("div");
+    messageBody.className = "message-body";
+    messageBody.appendChild(messageContent);
+
     message.appendChild(avatar);
-    message.appendChild(messageContent);
+    message.appendChild(messageBody);
 
     chatArea.appendChild(message);
     chatArea.scrollTop = chatArea.scrollHeight;
@@ -997,48 +1074,70 @@ async function sendQuestion() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
 
-        let isFirstChunk = true; // Dùng để kiểm tra đã có chunk đầu tiên chưa để xóa chữ đang tìm của Assistant
-        let buffer = "";
+        let isFirstChunk = true;
+        let streamBuffer = "";
+        let textBuffer = "";
+        let answerSources = [];
         const STREAM_DELAY = 10; // Thời gian nghỉ giữa các lần hiển thị
         const CHARS_PER_STEP = 5; // Số ký tự hiển thị mỗi lần
 
-        while (true) {
-            const { value, done } = await reader.read();
+        async function processEvent(block) {
+            const dataLine = block
+                .split(/\r?\n/)
+                .find(line => line.startsWith("data:"));
 
-            if (done) break; // Nếu stream đã kết thúc thì thoát vòng lặp
+            if (!dataLine) return;
 
-            // messageContent.textContent += decoder.decode(value, { stream: true});
-            buffer += decoder.decode(value, {
-                stream: true
-            });
+            const event = JSON.parse(dataLine.slice(5).trim());
+
+            if (event.type === "sources") {
+                answerSources = event.sources || [];
+                return;
+            }
+
+            if (event.type !== "token") return;
 
             if (isFirstChunk) {
                 messageContent.textContent = "";
                 isFirstChunk = false;
             }
 
-            while (buffer.length > 0) {
-                const chunk = buffer.slice(0, CHARS_PER_STEP);
-                buffer = buffer.slice(CHARS_PER_STEP);
+            textBuffer += event.text || "";
 
+            while (textBuffer.length > 0) {
+                const chunk = textBuffer.slice(0, CHARS_PER_STEP);
+                textBuffer = textBuffer.slice(CHARS_PER_STEP);
                 messageContent.textContent += chunk;
 
                 await new Promise(resolve => setTimeout(resolve, STREAM_DELAY));
             }
         }
 
-        // Giải mã phần dữ liệu còn lại
-        // messageContent.textContent += decoder.decode();
-        const remainingText = decoder.decode();
+        while (true) {
+            const { value, done } = await reader.read();
 
-        if (remainingText) {
-            if (isFirstChunk) {
-                messageContent.textContent = "";
+            if (done) break; // Nếu stream đã kết thúc thì thoát vòng lặp
+
+            streamBuffer += decoder.decode(value, {
+                stream: true
+            });
+
+            let boundary;
+            while ((boundary = /\r?\n\r?\n/.exec(streamBuffer)) !== null) {
+                const block = streamBuffer.slice(0, boundary.index);
+                streamBuffer = streamBuffer.slice(
+                    boundary.index + boundary[0].length
+                );
+                await processEvent(block);
             }
-
-            messageContent.textContent += remainingText;
         }
 
+        streamBuffer += decoder.decode();
+        if (streamBuffer.trim()) {
+            await processEvent(streamBuffer);
+        }
+
+        renderAnswerSources(answerSources, loadingMessage);
         await loadConversations();
 
     } catch (error) {
@@ -1124,3 +1223,361 @@ loadDocumentGroups();
 
 // Tải lịch sử cuộc trò chuyện ban đầu
 loadConversations();
+
+
+function renderAnswerSources(sources, message) {
+    const messageBody = message.querySelector(".message-body");
+    const oldSources = messageBody.querySelector(".answer-sources");
+    oldSources?.remove();
+
+    const container = document.createElement("details");
+    container.className = "answer-sources";
+
+    const heading = document.createElement("summary");
+    heading.className = "answer-sources-toggle";
+    heading.textContent = "Nguồn tài liệu dùng để trả lời";
+    container.appendChild(heading);
+
+    const sourceList = document.createElement("div");
+    sourceList.className = "answer-sources-list";
+
+    if (!sources.length) {
+        const emptyMessage = document.createElement("p");
+        emptyMessage.className = "answer-sources-empty";
+        emptyMessage.textContent =
+            "Không có node tài liệu được sử dụng cho câu trả lời này.";
+        sourceList.appendChild(emptyMessage);
+    }
+
+    sources.forEach((source, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "answer-source-item";
+        button.setAttribute("aria-label", "Mở và tô sáng nguồn tài liệu");
+
+        const fileName =
+            source.file_name || "Tài liệu không xác định";
+
+        const page = source.page;
+
+        button.textContent =
+            `${index + 1}. ${fileName}` +
+            (page != null ? ` — Trang ${page}` : "");
+
+        button.addEventListener("click", () => {
+            if (!source.group || !source.file_name) {
+                showToast(
+                    "Nguồn này chưa có đủ thông tin để mở tài liệu.",
+                    "error"
+                );
+                return;
+            }
+
+            if (!String(source.file_name).toLowerCase().endsWith(".pdf")) {
+                showToast(
+                    "Nguồn này chưa được hỗ trợ mở bằng PDF Viewer.",
+                    "error"
+                );
+                return;
+            }
+
+            openSourcePdf(source);
+        });
+
+        sourceList.appendChild(button);
+    });
+
+    container.appendChild(sourceList);
+    messageBody.appendChild(container);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+async function openSourcePdf(source) {
+    const modal = document.getElementById("pdfViewerModal");
+    const url = new URL(
+        "http://127.0.0.1:8000/documents/pdf"
+    );
+
+    url.searchParams.set("group", source.group);
+    url.searchParams.set("filename", source.file_name);
+
+    const pagesContainer = document.getElementById("pdfPages");
+    const modalBody = modal.querySelector(".pdf-modal-body");
+    const pageNumber = Number.parseInt(source.page, 10) || 1;
+    const scale = 1.25;
+    const renderId = (openSourcePdf.renderId || 0) + 1;
+    openSourcePdf.renderId = renderId;
+
+    pagesContainer.replaceChildren();
+    modalBody.scrollTop = 0;
+    document.getElementById("pdfViewerTitle").textContent =
+        `${source.file_name} — Đang tải...`;
+    showModal(modal);
+
+    const loadingMessage = document.createElement("p");
+    loadingMessage.className = "pdf-viewer-status";
+    loadingMessage.textContent = "Đang tải tài liệu PDF...";
+    pagesContainer.appendChild(loadingMessage);
+
+    try {
+        if (!window.pdfjsLib) {
+            throw new Error("Không tải được thư viện PDF.js.");
+        }
+
+        const pdf = await pdfjsLib.getDocument(url.toString()).promise;
+        if (renderId !== openSourcePdf.renderId) return;
+
+        if (pageNumber < 1 || pageNumber > pdf.numPages) {
+            throw new Error("Số trang của nguồn không hợp lệ.");
+        }
+
+        pagesContainer.replaceChildren();
+
+        const candidatePageNumbers = [
+            pageNumber - 1,
+            pageNumber,
+            pageNumber + 1
+        ].filter(number => number >= 1 && number <= pdf.numPages);
+        const candidatePageTexts = new Map();
+
+        for (const candidatePageNumber of candidatePageNumbers) {
+            if (renderId !== openSourcePdf.renderId) return;
+
+            const page = await pdf.getPage(candidatePageNumber);
+            const textContent = await page.getTextContent();
+            candidatePageTexts.set(
+                candidatePageNumber,
+                textContent.items
+                    .filter(item => typeof item.str === "string")
+                    .map(item => item.str)
+                    .join(" ")
+            );
+        }
+
+        const evidencePageNumbers = findEvidencePages(
+            candidatePageTexts,
+            source.text
+        );
+        const pagesToRender = evidencePageNumbers.length
+            ? evidencePageNumbers
+            : [pageNumber];
+        document.getElementById("pdfViewerTitle").textContent =
+            `${source.file_name} — Trang ${pagesToRender.join(", ")} / ${pdf.numPages}`;
+
+        let targetPageHighlighted = false;
+        for (const currentPageNumber of pagesToRender) {
+            if (renderId !== openSourcePdf.renderId) return;
+
+            const page = await pdf.getPage(currentPageNumber);
+            const viewport = page.getViewport({ scale });
+            const evidencePage = document.createElement("section");
+            evidencePage.className = "pdf-evidence-page";
+            evidencePage.dataset.pageNumber = String(currentPageNumber);
+
+            const pageLabel = document.createElement("p");
+            pageLabel.className = "pdf-page-label";
+            pageLabel.textContent = `Trang ${currentPageNumber}`;
+            evidencePage.appendChild(pageLabel);
+
+            const pageContainer = document.createElement("div");
+            pageContainer.className = "pdf-page";
+            pageContainer.style.width = `${viewport.width}px`;
+            pageContainer.style.height = `${viewport.height}px`;
+
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+            canvas.style.width = `${viewport.width}px`;
+            canvas.style.height = `${viewport.height}px`;
+            pageContainer.appendChild(canvas);
+
+            const textLayer = document.createElement("div");
+            textLayer.className = "textLayer";
+            textLayer.style.width = `${viewport.width}px`;
+            textLayer.style.height = `${viewport.height}px`;
+            textLayer.style.setProperty("--scale-factor", scale);
+            pageContainer.appendChild(textLayer);
+
+            evidencePage.appendChild(pageContainer);
+            pagesContainer.appendChild(evidencePage);
+
+            await page.render({
+                canvasContext: canvas.getContext("2d"),
+                viewport
+            }).promise;
+
+            const textContent = await page.getTextContent();
+            const textDivs = [];
+            await pdfjsLib.renderTextLayer({
+                textContentSource: textContent,
+                container: textLayer,
+                viewport,
+                textDivs
+            }).promise;
+
+            if (highlightSourceText(textLayer, source.text)) {
+                targetPageHighlighted = true;
+            }
+        }
+
+        if (renderId !== openSourcePdf.renderId) return;
+        if (!targetPageHighlighted) {
+            showToast(
+                "Đã mở PDF nhưng không tìm thấy đoạn trích của node trên trang nguồn.",
+                "error"
+            );
+        }
+    } catch (error) {
+        if (renderId !== openSourcePdf.renderId) return;
+        console.error("Lỗi mở PDF:", error);
+        pagesContainer.replaceChildren();
+        const errorMessage = document.createElement("p");
+        errorMessage.className = "pdf-viewer-status";
+        errorMessage.textContent = "Không thể tải PDF: " + error.message;
+        pagesContainer.appendChild(errorMessage);
+        showToast(
+            "Không thể mở PDF: " + error.message,
+            "error"
+        );
+    }
+}
+
+function findEvidencePages(pageTexts, sourceText) {
+    const target = normalizeText(sourceText);
+    if (!target) return [];
+
+    const pageCharacters = [];
+    const characterPages = [];
+
+    for (const [pageNumber, text] of pageTexts) {
+        for (const character of text) {
+            const normalized = normalizeText(character);
+            for (const value of normalized) {
+                pageCharacters.push(value);
+                characterPages.push(pageNumber);
+            }
+        }
+    }
+
+    const documentText = pageCharacters.join("");
+    const exactStart = documentText.indexOf(target);
+    if (exactStart !== -1) {
+        return [...new Set(
+            characterPages.slice(exactStart, exactStart + target.length)
+        )];
+    }
+
+    const matchedPages = new Set();
+    for (const windowSize of [80, 60, 40, 24]) {
+        if (target.length < windowSize) continue;
+
+        const stride = Math.max(1, windowSize - 20);
+        const offsets = [];
+        for (let offset = 0; offset + windowSize <= target.length; offset += stride) {
+            offsets.push(offset);
+        }
+        offsets.push(target.length - windowSize);
+
+        for (const offset of new Set(offsets)) {
+            const fragment = target.slice(offset, offset + windowSize);
+            let match = documentText.indexOf(fragment);
+            while (match !== -1) {
+                for (const pageNumber of characterPages.slice(
+                    match,
+                    match + fragment.length
+                )) {
+                    matchedPages.add(pageNumber);
+                }
+                match = documentText.indexOf(fragment, match + 1);
+            }
+        }
+
+        if (matchedPages.size) break;
+    }
+
+    return [...matchedPages].sort((a, b) => a - b);
+}
+
+function normalizeText(text) {
+    return String(text || "")
+        .normalize("NFKD")
+        .replace(/\p{M}/gu, "")
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function highlightSourceText(textLayer, sourceText) {
+    const target = normalizeText(sourceText);
+
+    if (!target) return false;
+
+    const spans = Array.from(
+        textLayer.querySelectorAll("span")
+    );
+    const pageCharacters = [];
+    const characterSpans = [];
+
+    for (const span of spans) {
+        for (const character of span.textContent || "") {
+            const normalizedCharacter = normalizeText(character);
+            for (const normalized of normalizedCharacter) {
+                pageCharacters.push(normalized);
+                characterSpans.push(span);
+            }
+        }
+    }
+
+    const pageText = pageCharacters.join("");
+    const matches = [];
+    const exactMatch = pageText.indexOf(target);
+
+    if (exactMatch !== -1) {
+        matches.push([exactMatch, exactMatch + target.length]);
+    } else {
+        const windowSize = Math.min(80, target.length);
+        const stride = Math.max(1, windowSize - 30);
+        const offsets = [];
+
+        for (let offset = 0; offset + windowSize <= target.length; offset += stride) {
+            offsets.push(offset);
+        }
+        if (target.length > windowSize) {
+            offsets.push(target.length - windowSize);
+        }
+
+        for (const offset of new Set(offsets)) {
+            const fragment = target.slice(offset, offset + windowSize);
+            let match = pageText.indexOf(fragment);
+            while (match !== -1) {
+                matches.push([match, match + fragment.length]);
+                match = pageText.indexOf(fragment, match + 1);
+            }
+        }
+    }
+
+    if (!matches.length) {
+        console.info("Chưa tìm được đoạn trích khớp trên trang PDF.");
+        return false;
+    }
+
+    const highlightedSpans = new Set();
+    for (const [start, end] of matches) {
+        for (let index = start; index < end; index++) {
+            const span = characterSpans[index];
+            if (span) highlightedSpans.add(span);
+        }
+    }
+
+    for (const span of highlightedSpans) {
+        span.classList.add("rag-highlight");
+    }
+
+    const firstHighlight = spans.find(span => highlightedSpans.has(span));
+
+    firstHighlight?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+    return highlightedSpans.size > 0;
+}
