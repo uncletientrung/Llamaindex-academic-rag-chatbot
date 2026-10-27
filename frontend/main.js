@@ -621,7 +621,10 @@ async function handleDocumentUpload(event) {
         const extension = file.name.split(".").pop().toLowerCase();
 
         if (!allowedExtensions.includes(extension)) { // Kiểm tra định dạng
-            alert(`File "${file.name}" không được hỗ trợ.`);
+            showToast(
+                `File "${file.name}" không được hỗ trợ. (Chỉ hỗ trợ file DOCX, PDF, TXT)`,
+                "error"
+            );
             continue;
         }
         if (file.size > MAX_FILE_SIZE) {

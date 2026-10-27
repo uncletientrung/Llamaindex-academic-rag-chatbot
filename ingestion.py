@@ -34,7 +34,7 @@ class DocumentIngestionPipeline:
         # =========================
         # 1. Cấu hình
         # =========================
-        Settings.llm = Ollama(model="qwen2.5:3b",request_timeout=120.0,)
+        Settings.llm = Ollama(model="qwen2.5:3b",request_timeout=120.0, temperature=0.7)
         Settings.embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
 
         self.data_dir = Path(data_dir).resolve()
