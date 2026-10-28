@@ -1315,7 +1315,7 @@ async function openSourcePdf(source) {
     const pagesContainer = document.getElementById("pdfPages");
     const modalBody = modal.querySelector(".pdf-modal-body");
     const pageNumber = Number.parseInt(source.page, 10) || 1;
-    const scale = 1.25;
+    const scale = 1.5;
     const renderId = (openSourcePdf.renderId || 0) + 1;
     openSourcePdf.renderId = renderId;
 
@@ -1426,7 +1426,11 @@ async function openSourcePdf(source) {
                 textDivs
             }).promise;
 
-            if (highlightSourceText(textLayer, source.text)) {
+            const highlightedFromOcr = renderEvidenceBboxes(
+                textLayer,
+                source.evidence_bboxes || []
+            );
+            if (highlightedFromOcr || highlightSourceText(textLayer, source.text)) {
                 targetPageHighlighted = true;
             }
         }
@@ -1507,6 +1511,22 @@ function findEvidencePages(pageTexts, sourceText) {
     }
 
     return [...matchedPages].sort((a, b) => a - b);
+}
+
+function renderEvidenceBboxes(textLayer, boxes) {
+    if (!Array.isArray(boxes) || !boxes.length) return false;
+
+    for (const box of boxes) {
+        const highlight = document.createElement("span");
+        highlight.className = "ocr-evidence-highlight";
+        highlight.style.left = `${box.x * 100}%`;
+        highlight.style.top = `${box.y * 100}%`;
+        highlight.style.width = `${box.width * 100}%`;
+        highlight.style.height = `${box.height * 100}%`;
+        textLayer.appendChild(highlight);
+    }
+
+    return true;
 }
 
 function normalizeText(text) {

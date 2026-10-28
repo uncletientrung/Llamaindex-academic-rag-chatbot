@@ -15,12 +15,12 @@ class NodePostprocessorFactory:
 
     def build(self) -> list:
         return [
-            # DebugNodePostprocessor(),
+            DebugNodePostprocessor(),
             SimilarityPostprocessor(
                 similarity_cutoff=self.similarity_cutoff
             ),
             self.reranker,
-            # DebugNodePostprocessor()
+            DebugNodePostprocessor()
         ]
 
 
@@ -38,7 +38,7 @@ class DebugNodePostprocessor(BaseNodePostprocessor):
             print(f"\n--- Node {i} ---")
             print(f"Node ID: {item.node.node_id}")
             print(f"Score: {item.score}")
-            print(f"Metadata: {item.node.metadata}")
+            # print(f"Metadata: {item.node.metadata}")
             print(f"Text:\n{item.node.get_content()}")
 
         print("==============================================\n")

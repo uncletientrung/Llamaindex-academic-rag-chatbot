@@ -21,6 +21,7 @@
 - **Embedding:** Hugging Face model `AITeamVN/Vietnamese_Embedding`
 - **Reranker:** `kiencnt2205/vietnamese-legal-reranker-bge-base`
 - **Frontend:** HTML, CSS và JavaScript thuần
+- **PDF OCR:** PyMuPDF, Tesseract OCR và language data tiếng Việt (`vie`)
 
 Các giá trị cấu hình chunking, retrieval và model nằm trong [constants.py](constants.py). LLM được khởi tạo trong [ingestion.py](ingestion.py) và [responsesynthesizer.py](responsesynthesizer.py).
 
@@ -28,9 +29,10 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 ```text
 .
-├── main2.py                 # FastAPI app và các API
-├── test.py                  # RAGService: indexing, retrieval, generation
+├── main.py                  # FastAPI app và các API
+├── ragservice.py            # Indexing, retrieval, generation
 ├── ingestion.py             # Đọc tài liệu, tạo và nạp index
+├── pdf_ingestion.py         # OCR, tách cột và giữ metadata PDF
 ├── constants.py             # Model và tham số RAG
 ├── postprocessors.py        # Similarity filter và reranker
 ├── responsesynthesizer.py   # Sinh câu trả lời bằng LlamaIndex
@@ -46,6 +48,7 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 - Python 3.10 trở lên
 - LlamaIndex
+- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) và language data `vie` (có thể cài kèm `eng`)
 - [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:3b`
 - Embedding model `AITeamVN/Vietnamese_Embedding` (được tải từ Hugging Face khi chạy lần đầu)
 - Vector store của LlamaIndex (`SimpleVectorStore`), lưu index cục bộ trong `storage/`
@@ -64,6 +67,8 @@ py -m venv .venv
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+Trên Windows, cài Tesseract OCR và chọn thêm dữ liệu ngôn ngữ **Vietnamese (`vie`)**. Đảm bảo lệnh `tesseract` chạy được trong PowerShell. Ứng dụng dùng OCR khi PDF không có text layer hữu ích; PDF có text layer được trích xuất trực tiếp. Trang nhiều cột được sắp xếp theo thứ tự đọc và đưa vào index thành từng cột riêng.
 
 Nếu PowerShell chặn kích hoạt môi trường ảo, có thể chạy lệnh này trong cửa sổ hiện tại rồi kích hoạt lại:
 
@@ -87,12 +92,14 @@ Embedding và reranker được tải từ Hugging Face khi cần; lần chạy 
 Tại thư mục gốc dự án, sau khi kích hoạt môi trường ảo:
 
 ```powershell
-uvicorn main2:app --reload
+uvicorn main:app --reload
 ```
 
 Backend mặc định chạy tại `http://127.0.0.1:8000`. Có thể mở `http://127.0.0.1:8000/docs` để xem và thử các API.
 
 Khi khởi động, ứng dụng nạp index có sẵn trong `storage/`; nếu chưa có index cho một nhóm tài liệu, ứng dụng sẽ tạo index từ dữ liệu tương ứng trong `data/`. Quá trình này có thể cần nhiều thời gian ở lần chạy đầu.
+
+Index cũ được xây dựng trước khi có OCR/layout sẽ tự động build lại một lần khi khởi động sau khi cập nhật code. Việc OCR tài liệu scan có thể làm lần build này lâu hơn.
 
 ### 2. Khởi động giao diện
 

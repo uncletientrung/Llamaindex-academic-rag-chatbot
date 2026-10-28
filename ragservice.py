@@ -1,6 +1,6 @@
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from pathlib import Path
-from llama_index.core.schema import QueryBundle
+from llama_index.core.schema import MetadataMode, QueryBundle
 from ingestion import DocumentIngestionPipeline
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.tools import QueryEngineTool
@@ -17,6 +17,7 @@ from constants import (
 )
 from postprocessors import NodePostprocessorFactory
 from responsesynthesizer import ResponseSynthesizerFactory
+from pdf_ingestion import find_ocr_evidence_bboxes
 
 class RAGService:
     def __init__(self, data_dir="data"):
@@ -125,7 +126,7 @@ class RAGService:
             "sources": self.extract_sources(nodes),
         }
 
-        recent_history = (history or [])[-10:] # Lấy 10 cuộc hội thoại gần nhất
+        recent_history = (history or [])[-6:] # Chỉ giữ hai lượt gần nhất để giảm nhiễu
         history_text = ""
         for message in recent_history:
             role = 'Người dùng' if message.role.value == 'user' else 'Trợ lý'
@@ -133,16 +134,12 @@ class RAGService:
             history_text += f"{role}: {content}\n"
 
         if history_text:
-            retrieval_query = f"""
-            Lịch sử hội thoại:
-            ---------------------
-            {history_text}
-            ---------------------
-            Câu hỏi: 
-            ---------------------
-            {question}
-            ---------------------
-            """
+            retrieval_query = f"""LỊCH SỬ HỘI THOẠI:
+                {history_text}
+
+                CÂU HỎI HIỆN TẠI (ưu tiên trả lời câu hỏi này):
+                {question}
+                """
         else:
             retrieval_query = question
 
@@ -186,14 +183,19 @@ class RAGService:
         for item in nodes:
             node = item.node
             metadata = node.metadata or {}
+            source_text = node.get_content(metadata_mode=MetadataMode.NONE)
 
             source = {
-                "text": node.get_content(),
-                "score":  float(item.score) if item.score is not None else None,
+                "text": source_text,
+                "score": float(item.score) if item.score is not None else None,
                 "file_name": metadata.get("file_name"),
                 "file_path": metadata.get("file_path"),
                 "group": metadata.get("folder_name"),
                 "page": metadata.get("page_label"),
+                "evidence_bboxes": find_ocr_evidence_bboxes(
+                    source_text,
+                    metadata.get("ocr_words", []),
+                ),
             }
 
             key = (source["file_path"], source["page"], source["text"])

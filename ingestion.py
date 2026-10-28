@@ -29,6 +29,8 @@ from constants import (
     EMBEDDING_MODEL
 )
 from rich.pretty import pprint
+from pdf_ingestion import load_pdf_documents
+
 
 class DocumentIngestionPipeline:
     def __init__(self, data_dir="data"):
@@ -67,11 +69,17 @@ class DocumentIngestionPipeline:
         if not files:
             print(f"Bỏ qua thư mục không có file: {folder.name}")
             return []
-        
-        reader = SimpleDirectoryReader(
-            input_files=files
-        )
-        return reader.load_data()
+
+        documents = []
+        for file_path in files:
+            path = Path(file_path)
+            if path.suffix.lower() == ".pdf":
+                documents.extend( load_pdf_documents(path, group_name=folder.name))
+            else:
+                reader = SimpleDirectoryReader(input_files=[file_path])
+                documents.extend(reader.load_data())
+
+        return documents
 
     def get_nodes(self, documents, folder_name: str): # Hàm lấy các nodes đã extractor và embed
         split = SentenceSplitter(chunk_size= DEFAULT_CHUNK_SIZE, chunk_overlap=DEFAULT_CHUNK_OVERLAP)
@@ -130,12 +138,13 @@ class DocumentIngestionPipeline:
         for folder in folders:
             group_name = folder.name
             persist_dir = self.storage_dir / group_name
+            version_file = persist_dir / ".ingestion-version"
             print(f"Đang xử lý nhóm: {group_name}")
 
             # Load lại index đã lưu
             if (persist_dir.is_dir() and group_name not in rebuild_groups):
                 try:
-                    storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir) )
+                    storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir))
                     index = load_index_from_storage(storage_context)
                     self.indices[group_name] = index
                     print(f"Đã load lại index từ storage: {group_name}")
@@ -146,7 +155,6 @@ class DocumentIngestionPipeline:
                         f"Không load được {group_name}: {ex}. "
                         "Sẽ build lại."
                     )
-                    shutil.rmtree(persist_dir, ignore_errors=True)
 
             # Chưa có storage hoặc cần cập nhật index
             documents = self.load_documents(folder)
