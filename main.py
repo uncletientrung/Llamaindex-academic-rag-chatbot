@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
@@ -270,12 +271,9 @@ def delete_group(name: str): # Xóa thư mục
         )
 
     try:
-        has_files = any(file.is_file() for file in group_dir.rglob("*")) # check bên trong đó có file hay không
         shutil.rmtree(group_dir) # Xóa toàn bộ thư mục nhóm và các file bên trong
-        if has_files:
-            rag_engine.rebuild_index()  # Xây dựng lại RAG từ tất cả file còn lại
+        rag_engine.rebuild_index()  # Cập nhật index và dọn storage của nhóm vừa xóa
     except Exception:
-        import logging
         logging.exception("Lỗi khi xóa nhóm tài liệu")
         raise HTTPException(
             status_code=500,

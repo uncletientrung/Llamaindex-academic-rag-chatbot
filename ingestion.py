@@ -122,7 +122,7 @@ class DocumentIngestionPipeline:
         folders = self.get_subfolders()
         current_groups = {folder.name for folder in folders}
 
-        # Xóa storage của những nhóm tài liệu đã bị xóa
+        # Xóa storage của những nhóm tài liệu đã bị xóa thư mục data
         for saved_storage_dir in self.storage_dir.iterdir(): # Lấy các folder và file đã lưu vào storage
             if saved_storage_dir.is_dir() and saved_storage_dir.name not in current_groups:
                 shutil.rmtree(saved_storage_dir)
@@ -152,11 +152,17 @@ class DocumentIngestionPipeline:
             documents = self.load_documents(folder)
             if not documents:
                 print(f"Bỏ qua thư mục rỗng: {folder.name}")
+                if persist_dir.is_dir():
+                    shutil.rmtree(persist_dir)
+                    print(f"Đã xóa index cũ của nhóm rỗng: {group_name}")
                 continue
 
             nodes = self.get_nodes(documents, folder_name=group_name)
             if not nodes:
                 print(f"Không tạo được nodes: {group_name}")
+                if persist_dir.is_dir():
+                    shutil.rmtree(persist_dir)
+                    print(f"Đã xóa index cũ vì load node lỗi: {group_name}")
                 continue
 
             # Mỗi nhóm có một storage riêng
