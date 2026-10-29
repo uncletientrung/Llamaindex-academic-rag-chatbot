@@ -26,7 +26,8 @@ from constants import (
     SUPPORTED_EXTENSIONS,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_CHUNK_OVERLAP,
-    EMBEDDING_MODEL
+    EMBEDDING_MODEL,
+    PDF_OCR_VERSION,
 )
 from rich.pretty import pprint
 from pdf_ingestion import load_pdf_documents
@@ -138,11 +139,23 @@ class DocumentIngestionPipeline:
         for folder in folders:
             group_name = folder.name
             persist_dir = self.storage_dir / group_name
-            version_file = persist_dir / ".ingestion-version"
+            version_file = persist_dir / ".pdf-ocr-version"
+            has_pdf = any(
+                Path(file_path).suffix.lower() == ".pdf"
+                for file_path in self.get_files(folder)
+            )
+            needs_ocr_rebuild = has_pdf and (
+                not version_file.is_file()
+                or version_file.read_text(encoding="utf-8").strip() != PDF_OCR_VERSION
+            )
             print(f"Đang xử lý nhóm: {group_name}")
 
             # Load lại index đã lưu
-            if (persist_dir.is_dir() and group_name not in rebuild_groups):
+            if (
+                persist_dir.is_dir()
+                and group_name not in rebuild_groups
+                and not needs_ocr_rebuild
+            ):
                 try:
                     storage_context = StorageContext.from_defaults(persist_dir=str(persist_dir))
                     index = load_index_from_storage(storage_context)
@@ -185,6 +198,8 @@ class DocumentIngestionPipeline:
             index.storage_context.persist(
                 persist_dir=str(persist_dir)
             )
+            if has_pdf:
+                version_file.write_text(PDF_OCR_VERSION, encoding="utf-8")
 
             self.indices[group_name] = index
 

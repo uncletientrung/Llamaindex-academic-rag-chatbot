@@ -14,8 +14,8 @@ from pytesseract import Output
 
 
 OCR_MIN_ALPHANUMERIC_CHARS = 40 # nếu có ít hơn 40 ký tự chữ hoặc số thì trang đó cần OCR.
-OCR_LANGUAGE = "vie+eng" #  yêu cầu Tesseract nhận diện tiếng Việt
-OCR_RENDER_SCALE = 2 # render PDF với hệ số phóng đại 2 lần
+OCR_LANGUAGE = "vie"
+OCR_RENDER_SCALE = 3 # render PDF với hệ số phóng đại 3 lần
 FULL_WIDTH_BLOCK_RATIO = 0.72 # block rộng ít nhất 72% chiều rộng trang được xem là block trải rộng toàn trang.
 MIN_COLUMN_GUTTER_RATIO = 0.025 # khe phân cách cột phải đủ rộng, tối thiểu 2,5% chiều rộng trang, mới được cân nhắc là gutter.
 # 2 số cuối là ngưỡng heuristic để suy đoán bố cục, không phải quy tắc chính xác cho mọi tài liệu.
@@ -118,18 +118,23 @@ def _ocr_blocks(
     scale_x: float,
     scale_y: float,
 ) -> list[dict[str, Any]]:
-    # Mục đích
-    # Nhận diện văn bản từ ảnh của một trang PDF bằng Tesseract OCR, sau đó gom các từ thành từng dòng và quy đổi tọa 
-    # độ từ ảnh về hệ tọa độ PDF.
-    
-    data = pytesseract.image_to_data(
-        image,
-        lang=OCR_LANGUAGE,
-        config="--psm 3",
-        output_type=Output.DICT,
-    )
-    lines: dict[tuple[int, int, int], list[dict[str, Any]]] = defaultdict(list)
+    try:
+        data = pytesseract.image_to_data(
+            image,
+            lang=OCR_LANGUAGE,
+            config="--psm 3",
+            output_type=Output.DICT,
+        )
+    except pytesseract.TesseractNotFoundError as error:
+        raise RuntimeError(
+            "Không tìm thấy Tesseract OCR. Cài Tesseract và thêm vào PATH."
+        ) from error
+    except pytesseract.TesseractError as error:
+        raise RuntimeError(
+            "Không chạy được Tesseract OCR. Hãy kiểm tra đã cài language data vie."
+        ) from error
 
+    lines: dict[tuple[int, int, int], list[dict[str, Any]]] = defaultdict(list)
     for index, raw_text in enumerate(data["text"]):
         text = raw_text.strip()
         try:
@@ -152,7 +157,6 @@ def _ocr_blocks(
         ].append({
             "text": text,
             "bbox": (x0, y0, x1, y1),
-            "confidence": confidence,
         })
 
     blocks = []
@@ -330,20 +334,11 @@ def load_pdf_documents(file_path: str | Path, group_name: str) -> list[Document]
                     (pixmap.width, pixmap.height),
                     pixmap.samples,
                 )
-                try:
-                    blocks = _ocr_blocks(
-                        image,
-                        pixmap.width / page.rect.width,
-                        pixmap.height / page.rect.height,
-                    )
-                except pytesseract.TesseractNotFoundError as error:
-                    raise RuntimeError(
-                        "Không tìm thấy Tesseract OCR. Cài Tesseract và thêm vào PATH."
-                    ) from error
-                except pytesseract.TesseractError as error:
-                    raise RuntimeError(
-                        "Không chạy được Tesseract OCR. Hãy kiểm tra đã cài language data vie."
-                    ) from error
+                blocks = _ocr_blocks(
+                    image,
+                    pixmap.width / page.rect.width,
+                    pixmap.height / page.rect.height,
+                )
                 ocr_used = True
 
             ordered_blocks = _reading_order(blocks, page.rect.width)

@@ -1,10 +1,9 @@
-import shutil
 from pathlib import Path
 
 import pymupdf
-import pytest
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
+import pdf_ingestion
 from pdf_ingestion import find_ocr_evidence_bboxes, load_pdf_documents
 
 
@@ -57,30 +56,47 @@ def test_pdf_page_with_three_columns_is_split_in_reading_order(tmp_path: Path):
         assert document.metadata["source_column"] == column
 
 
-@pytest.mark.skipif(shutil.which("tesseract") is None, reason="Tesseract executable is not installed")
-def test_scanned_pdf_page_is_ocrd_and_keeps_word_bboxes(tmp_path: Path):
+def test_scanned_pdf_page_uses_vietnamese_ocr_and_keeps_word_bboxes(
+    tmp_path: Path,
+    monkeypatch,
+):
     pdf_path = tmp_path / "scan.pdf"
-    image = Image.new("RGB", (1200, 500), "white")
-    draw = ImageDraw.Draw(image)
-    font_path = Path(r"C:\Windows\Fonts\arial.ttf")
-    if not font_path.is_file():
-        font_path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
-    font = ImageFont.truetype(str(font_path), 48)
-    draw.text((60, 120), "CONG TY CO PHAN VA HO SO PHAP LY", fill="black", font=font)
-
-    image_path = tmp_path / "scan.png"
-    image.save(image_path)
     pdf = pymupdf.open()
     page = pdf.new_page(width=600, height=250)
-    page.insert_image(page.rect, filename=str(image_path))
+    page.draw_rect(page.rect, color=(1, 1, 1), fill=(1, 1, 1))
     pdf.save(pdf_path)
     pdf.close()
 
+    words = "CỘNG TY CỔ PHẦN VÀ HỒ SƠ PHÁP LÝ".split()
+    ocr_data = {
+        "text": words,
+        "conf": ["95"] * len(words),
+        "left": [80 + index * 100 for index in range(len(words))],
+        "top": [200] * len(words),
+        "width": [80] * len(words),
+        "height": [60] * len(words),
+        "block_num": [1] * len(words),
+        "par_num": [1] * len(words),
+        "line_num": [1] * len(words),
+    }
+
+    def fake_image_to_data(image, *, lang, config, output_type):
+        assert image.size == (1800, 750)
+        assert lang == "vie"
+        assert config == "--psm 3"
+        assert output_type == pdf_ingestion.Output.DICT
+        return ocr_data
+
+    monkeypatch.setattr(
+        pdf_ingestion.pytesseract,
+        "image_to_data",
+        fake_image_to_data,
+    )
     documents = load_pdf_documents(pdf_path, group_name="scans")
 
     assert len(documents) == 1
     assert documents[0].metadata["ocr_used"]
-    assert "CONG TY" in documents[0].text.upper()
+    assert "CỘNG TY CỔ PHẦN" in documents[0].text
     assert documents[0].metadata["ocr_words"]
     assert all(
         0 <= word[coordinate] <= 1

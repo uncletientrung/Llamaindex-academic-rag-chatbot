@@ -48,7 +48,7 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 - Python 3.10 trở lên
 - LlamaIndex
-- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) và language data `vie` (có thể cài kèm `eng`)
+- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) và language data tiếng Việt (`vie`)
 - [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:3b`
 - Embedding model `AITeamVN/Vietnamese_Embedding` (được tải từ Hugging Face khi chạy lần đầu)
 - Vector store của LlamaIndex (`SimpleVectorStore`), lưu index cục bộ trong `storage/`
@@ -68,7 +68,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Trên Windows, cài Tesseract OCR và chọn thêm dữ liệu ngôn ngữ **Vietnamese (`vie`)**. Đảm bảo lệnh `tesseract` chạy được trong PowerShell. Ứng dụng dùng OCR khi PDF không có text layer hữu ích; PDF có text layer được trích xuất trực tiếp. Trang nhiều cột được sắp xếp theo thứ tự đọc và đưa vào index thành từng cột riêng.
+Trên Windows, cài Tesseract OCR và language data **Vietnamese (`vie`)**. Đảm bảo lệnh `tesseract` chạy được trong PowerShell. Ứng dụng chỉ dùng OCR tiếng Việt (`vie`) khi PDF không có text layer hữu ích; PDF có text layer được trích xuất trực tiếp. Trang nhiều cột được sắp xếp theo thứ tự đọc và đưa vào index thành từng cột riêng. Tesseract cung cấp tọa độ riêng cho từng từ OCR để highlight nguồn.
 
 Nếu PowerShell chặn kích hoạt môi trường ảo, có thể chạy lệnh này trong cửa sổ hiện tại rồi kích hoạt lại:
 
@@ -99,7 +99,7 @@ Backend mặc định chạy tại `http://127.0.0.1:8000`. Có thể mở `http
 
 Khi khởi động, ứng dụng nạp index có sẵn trong `storage/`; nếu chưa có index cho một nhóm tài liệu, ứng dụng sẽ tạo index từ dữ liệu tương ứng trong `data/`. Quá trình này có thể cần nhiều thời gian ở lần chạy đầu.
 
-Index cũ được xây dựng trước khi có OCR/layout sẽ tự động build lại một lần khi khởi động sau khi cập nhật code. Việc OCR tài liệu scan có thể làm lần build này lâu hơn.
+Index PDF cũ sẽ tự động build lại một lần khi cập nhật pipeline OCR tiếng Việt. Việc OCR tài liệu scan có thể làm lần build này lâu hơn.
 
 ### 2. Khởi động giao diện
 
