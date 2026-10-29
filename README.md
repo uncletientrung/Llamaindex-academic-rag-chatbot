@@ -40,7 +40,6 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 ├── data/                    # Tài liệu, chia theo thư mục nhóm
 ├── storage/                 # Index đã persist và lịch sử chat
 ├── frontend/                # Giao diện web tĩnh
-├── src/                     # Các module và thử nghiệm phát triển
 └── evaluation/              # Dataset, script và kết quả đánh giá
 ```
 
