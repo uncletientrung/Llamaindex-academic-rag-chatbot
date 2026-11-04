@@ -91,20 +91,47 @@ python -m pip install torch torchvision --index-url https://download.pytorch.org
 python -m pip install -r requirements-ocr.txt
 ```
 
-Clone phiên bản DeepDoc đã thử nghiệm vào thư mục `third_party` (đã được Git bỏ qua) và cấu hình đường dẫn model:
+Clone phiên bản DeepDoc đã thử nghiệm vào `D:\deepdoc_vietocr` và cấu hình đường dẫn model:
 
 ```powershell
-$deepdocPath = Join-Path $PWD "third_party\deepdoc_vietocr"
-New-Item -ItemType Directory -Force (Split-Path $deepdocPath) | Out-Null
+$deepdocPath = "D:\deepdoc_vietocr"
 git clone https://github.com/hoaivannguyen/deepdoc_vietocr.git $deepdocPath
 git -C $deepdocPath checkout 8f7906fd4e78cd0324532298e9062b031b4a320c
 [Environment]::SetEnvironmentVariable("DEEPDOC_VIETOCR_PATH", $deepdocPath, "User")
 $env:DEEPDOC_VIETOCR_PATH = $deepdocPath
 ```
 
-`DEEPDOC_VIETOCR_PATH` phải trỏ tới thư mục gốc có `module/`, `onnx/` và `vietocr/weight/`. Lệnh trên lưu biến cho các terminal PowerShell mới và đặt biến cho cửa sổ hiện tại. Nếu chuyển project sang thư mục khác, hãy cập nhật biến này. Mã nguồn DeepDoc và model không nằm trong project Git; mỗi máy cần tự clone và tải chúng.
+`DEEPDOC_VIETOCR_PATH` phải trỏ tới thư mục gốc có `module/`, `onnx/` và `vietocr/weight/`. Lệnh trên lưu biến cho các terminal PowerShell mới và đặt biến cho cửa sổ hiện tại. Nếu máy không có ổ D, chọn vị trí khác và cập nhật `$deepdocPath`. Mã nguồn DeepDoc và model không nằm trong project Git; mỗi máy cần tự clone và tải chúng.
 
 PDF có text layer hữu ích được trích xuất trực tiếp; PDF scan dùng DeepDoc + VietOCR. PDF có nhiều cột được sắp xếp theo thứ tự đọc. Văn bản trích xuất được lưu để kiểm tra trong `data/<tên nhóm>__<tên file>.txt`.
+
+### Tùy chọn: kiểm thử chất lượng OCR bằng ảnh và text theo trang
+
+Phần này chỉ dùng khi muốn đánh giá chất lượng DeepDoc độc lập; không thuộc luồng upload/index của chatbot. Nếu cần chạy, cài thêm `trio` trong môi trường Python đang dùng:
+
+```powershell
+python -m pip install trio
+Set-Location D:\deepdoc_vietocr
+$env:INPUT_PDF = "C:\Users\<tên người dùng>\Downloads\document.pdf"
+$env:OUTPUT_DIR = "C:\Users\<tên người dùng>\Downloads\document_deepdoc_output"
+
+@'
+from PIL import Image
+import os
+import runpy
+import sys
+
+Image.ANTIALIAS = Image.Resampling.LANCZOS
+sys.argv = [
+    "t_ocr.py",
+    "--inputs", os.environ["INPUT_PDF"],
+    "--output_dir", os.environ["OUTPUT_DIR"],
+]
+runpy.run_path("t_ocr.py", run_name="__main__")
+'@ | python -
+```
+
+Thay đường dẫn mẫu trong `$env:INPUT_PDF` và `$env:OUTPUT_DIR` bằng vị trí file PDF và thư mục kết quả của bạn. Dòng `Image.ANTIALIAS` giúp script tương thích với Pillow mới. Trong thư mục output, mỗi trang có ảnh `.jpg` và text `.jpg.txt`. Script ghi tiến độ và lỗi vào `D:\deepdoc_vietocr\log\t_ocr.log`; có thể xóa thư mục `log` nếu không cần nhật ký, script sẽ tạo lại khi chạy lần sau. Nếu chỉ dùng chatbot, bỏ qua toàn bộ mục kiểm thử tùy chọn này.
 
 Tải model LLM mà ứng dụng sử dụng:
 
@@ -119,8 +146,8 @@ Embedding và reranker được tải từ Hugging Face khi cần; lần chạy 
 Mỗi lần chạy trên terminal mới, mở PowerShell tại thư mục project, kích hoạt môi trường ảo và nạp lại đường dẫn DeepDoc đã lưu:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
 $env:DEEPDOC_VIETOCR_PATH = [Environment]::GetEnvironmentVariable("DEEPDOC_VIETOCR_PATH", "User")
+.\.venv\Scripts\Activate.ps1
 ```
 
 Khởi động backend:
