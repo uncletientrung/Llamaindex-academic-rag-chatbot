@@ -327,6 +327,15 @@ function renderDocumentGroupSelect() {
     ); // Giữ lựa chọn cũ nếu nhóm vẫn còn
 
     documentGroupSelect.value = groupExists ? selectedGroup : "all";
+    updateChatSubtitle();
+}
+
+// Hiển thị phạm vi tìm kiếm hiện được chọn
+function updateChatSubtitle() {
+    const selectedOption = documentGroupSelect.selectedOptions[0];
+    const groupName = selectedOption?.textContent || "Tất cả tài liệu";
+
+    chatSubtitle.textContent = `Đang tìm kiếm trong: ${groupName}`;
 }
 
 // Tải danh sách nhóm và các tệp từ backend
@@ -1242,6 +1251,9 @@ createGroupBtn.addEventListener("click", createDocumentGroup);
 
 // Sự kiện tìm kiếm nhóm tài liệu
 searchInput.addEventListener("input", renderDocumentGroups);
+
+// Cập nhật phạm vi tìm kiếm khi đổi nhóm tài liệu
+documentGroupSelect.addEventListener("change", updateChatSubtitle);
 
 // Sự kiện thu gọn nhóm, xóa nhóm và xóa tệp
 groupsList.addEventListener("click", handleDocumentGroupClick);
