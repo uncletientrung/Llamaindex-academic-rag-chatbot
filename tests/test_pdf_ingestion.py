@@ -1,10 +1,19 @@
 from pathlib import Path
 
 import pymupdf
+import pytest
 from PIL import Image
 
 import pdf_ingestion
 from pdf_ingestion import find_ocr_evidence_bboxes, load_pdf_documents
+
+
+def test_scanned_pdf_requires_configured_deepdoc(monkeypatch):
+    monkeypatch.delenv(pdf_ingestion.DEEPDOC_PATH_ENV, raising=False)
+    monkeypatch.setattr(pdf_ingestion, "_DEEPDOC_OCR", None)
+
+    with pytest.raises(RuntimeError, match="DEEPDOC_VIETOCR_PATH"):
+        pdf_ingestion._get_deepdoc_ocr()
 
 
 def test_pdf_page_with_two_columns_is_split_in_reading_order(tmp_path: Path):
@@ -60,37 +69,31 @@ def test_scanned_pdf_page_uses_vietnamese_ocr_and_keeps_word_bboxes(
     tmp_path: Path,
     monkeypatch,
 ):
-    pdf_path = tmp_path / "scan.pdf"
+    group_dir = tmp_path / "scans"
+    group_dir.mkdir()
+    pdf_path = group_dir / "scan.pdf"
     pdf = pymupdf.open()
     page = pdf.new_page(width=600, height=250)
     page.draw_rect(page.rect, color=(1, 1, 1), fill=(1, 1, 1))
     pdf.save(pdf_path)
     pdf.close()
 
-    words = "CỘNG TY CỔ PHẦN VÀ HỒ SƠ PHÁP LÝ".split()
-    ocr_data = {
-        "text": words,
-        "conf": ["95"] * len(words),
-        "left": [80 + index * 100 for index in range(len(words))],
-        "top": [200] * len(words),
-        "width": [80] * len(words),
-        "height": [60] * len(words),
-        "block_num": [1] * len(words),
-        "par_num": [1] * len(words),
-        "line_num": [1] * len(words),
-    }
+    class FakeDeepDocOCR:
+        drop_score = 0.5
 
-    def fake_image_to_data(image, *, lang, config, output_type):
-        assert image.size == (1800, 750)
-        assert lang == "vie"
-        assert config == "--psm 3"
-        assert output_type == pdf_ingestion.Output.DICT
-        return ocr_data
+        def __call__(self, image):
+            assert image.shape == (750, 1800, 3)
+            return [
+                (
+                    [[240, 600], [900, 600], [900, 660], [240, 660]],
+                    ("CỘNG TY CỔ PHẦN VÀ HỒ SƠ PHÁP LÝ", 1.0),
+                )
+            ]
 
     monkeypatch.setattr(
-        pdf_ingestion.pytesseract,
-        "image_to_data",
-        fake_image_to_data,
+        pdf_ingestion,
+        "_get_deepdoc_ocr",
+        lambda: FakeDeepDocOCR(),
     )
     documents = load_pdf_documents(pdf_path, group_name="scans")
 
@@ -98,6 +101,19 @@ def test_scanned_pdf_page_uses_vietnamese_ocr_and_keeps_word_bboxes(
     assert documents[0].metadata["ocr_used"]
     assert "CỘNG TY CỔ PHẦN" in documents[0].text
     assert documents[0].metadata["ocr_words"]
+    assert documents[0].metadata["ocr_words"][0] == {
+        "text": "CỘNG TY CỔ PHẦN VÀ HỒ SƠ PHÁP LÝ",
+        "x": 80 / 600,
+        "y": 200 / 250,
+        "width": 220 / 600,
+        "height": 20 / 250,
+    }
+    review_file = tmp_path / "scans__scan.txt"
+    assert review_file.is_file()
+    assert "CỘNG TY CỔ PHẦN VÀ HỒ SƠ PHÁP LÝ" in review_file.read_text(
+        encoding="utf-8"
+    )
+    assert "--- Trang 1 | Cột 1 ---" in review_file.read_text(encoding="utf-8")
     assert all(
         0 <= word[coordinate] <= 1
         for word in documents[0].metadata["ocr_words"]

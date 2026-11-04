@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import importlib
+import os
 from pathlib import Path
 import re
+import sys
+import threading
 import unicodedata
 from typing import Any
 
 import pymupdf
-import pytesseract
 from llama_index.core import Document
 from PIL import Image
-from pytesseract import Output
-
 
 OCR_MIN_ALPHANUMERIC_CHARS = 40 # nếu có ít hơn 40 ký tự chữ hoặc số thì trang đó cần OCR.
-OCR_LANGUAGE = "vie"
 OCR_RENDER_SCALE = 3 # render PDF với hệ số phóng đại 3 lần
 FULL_WIDTH_BLOCK_RATIO = 0.72 # block rộng ít nhất 72% chiều rộng trang được xem là block trải rộng toàn trang.
 MIN_COLUMN_GUTTER_RATIO = 0.025 # khe phân cách cột phải đủ rộng, tối thiểu 2,5% chiều rộng trang, mới được cân nhắc là gutter.
 # 2 số cuối là ngưỡng heuristic để suy đoán bố cục, không phải quy tắc chính xác cho mọi tài liệu.
+DEEPDOC_PATH_ENV = "DEEPDOC_VIETOCR_PATH"
+_DEEPDOC_IMPORT_LOCK = threading.Lock()
+_DEEPDOC_OCR: Any | None = None
 
 def _normalized_words(text: str) -> list[str]:
     # Chuẩn hóa một đoạn văn bản thành danh sách token để so sánh văn bản nguồn với kết quả OCR, 
@@ -113,63 +116,95 @@ def _text_blocks(page: pymupdf.Page) -> list[dict[str, Any]]:
     return blocks
 
 
+def _get_deepdoc_ocr() -> Any:
+    global _DEEPDOC_OCR
+    if _DEEPDOC_OCR is not None:
+        return _DEEPDOC_OCR
+
+    with _DEEPDOC_IMPORT_LOCK:
+        if _DEEPDOC_OCR is not None:
+            return _DEEPDOC_OCR
+
+        configured_path = os.environ.get(DEEPDOC_PATH_ENV, "").strip()
+        if not configured_path:
+            raise RuntimeError(
+                f"Thiếu biến môi trường {DEEPDOC_PATH_ENV}. "
+                "Hãy clone deepdoc_vietocr và đặt biến này tới thư mục repository."
+            )
+
+        repository = Path(configured_path).expanduser().resolve()
+        required_files = (
+            repository / "module" / "ocr.py",
+            repository / "onnx" / "det.onnx",
+            repository / "vietocr" / "weight" / "vgg_seq2seq.pth",
+        )
+        missing_files = [str(path) for path in required_files if not path.is_file()]
+        if missing_files:
+            raise RuntimeError(
+                f"DeepDoc + VietOCR không đầy đủ trong {repository}. "
+                f"Thiếu: {', '.join(missing_files)}"
+            )
+
+        repository_string = str(repository)
+        if repository_string not in sys.path:
+            sys.path.insert(0, repository_string)
+
+        try:
+            deepdoc = importlib.import_module("module.ocr")
+        except ImportError as error:
+            raise RuntimeError(
+                "Không tải được DeepDoc + VietOCR. "
+                "Cài các dependency bằng `pip install -r requirements-ocr.txt`."
+            ) from error
+
+        if not hasattr(Image, "ANTIALIAS"):
+            setattr(Image, "ANTIALIAS", Image.Resampling.LANCZOS)
+
+        # DeepDoc's recognizer uses a weight path relative to the process working directory.
+        base_text_recognizer = deepdoc.TextRecognizer
+
+        class ConfiguredTextRecognizer(base_text_recognizer):
+            def __init__(self, model_dir=None, device_id=None):
+                config = deepdoc.Cfg.load_config_from_name("vgg_seq2seq")
+                config["weights"] = str(
+                    repository / "vietocr" / "weight" / "vgg_seq2seq.pth"
+                )
+                config["cnn"]["pretrained"] = True
+                config["device"] = "cpu"
+                self.detector = deepdoc.Predictor(config)
+
+        deepdoc.TextRecognizer = ConfiguredTextRecognizer
+        _DEEPDOC_OCR = deepdoc.OCR()
+        return _DEEPDOC_OCR
+
+
 def _ocr_blocks(
     image: Image.Image,
     scale_x: float,
     scale_y: float,
 ) -> list[dict[str, Any]]:
-    try:
-        data = pytesseract.image_to_data(
-            image,
-            lang=OCR_LANGUAGE,
-            config="--psm 3",
-            output_type=Output.DICT,
-        )
-    except pytesseract.TesseractNotFoundError as error:
-        raise RuntimeError(
-            "Không tìm thấy Tesseract OCR. Cài Tesseract và thêm vào PATH."
-        ) from error
-    except pytesseract.TesseractError as error:
-        raise RuntimeError(
-            "Không chạy được Tesseract OCR. Hãy kiểm tra đã cài language data vie."
-        ) from error
+    import numpy as np
 
-    lines: dict[tuple[int, int, int], list[dict[str, Any]]] = defaultdict(list)
-    for index, raw_text in enumerate(data["text"]):
-        text = raw_text.strip()
-        try:
-            confidence = float(data["conf"][index])
-        except (TypeError, ValueError):
-            continue
-        if not text or confidence < 0:
-            continue
-
-        x0 = float(data["left"][index]) / scale_x
-        y0 = float(data["top"][index]) / scale_y
-        x1 = (float(data["left"][index]) + float(data["width"][index])) / scale_x
-        y1 = (float(data["top"][index]) + float(data["height"][index])) / scale_y
-        lines[
-            (
-                int(data["block_num"][index]),
-                int(data["par_num"][index]),
-                int(data["line_num"][index]),
-            )
-        ].append({
-            "text": text,
-            "bbox": (x0, y0, x1, y1),
-        })
+    ocr = _get_deepdoc_ocr()
+    detected_lines = ocr(np.asarray(image.convert("RGB")))
 
     blocks = []
-    for words in lines.values():
+    for polygon, recognition in detected_lines or []:
+        text, confidence = recognition
+        text = text.strip()
+        if not text or confidence < ocr.drop_score:
+            continue
+
+        points = np.asarray(polygon, dtype=float)
+        x0 = float(points[:, 0].min()) / scale_x
+        y0 = float(points[:, 1].min()) / scale_y
+        x1 = float(points[:, 0].max()) / scale_x
+        y1 = float(points[:, 1].max()) / scale_y
+        word = {"text": text, "bbox": (x0, y0, x1, y1)}
         blocks.append({
-            "text": " ".join(word["text"] for word in words),
-            "bbox": (
-                min(word["bbox"][0] for word in words),
-                min(word["bbox"][1] for word in words),
-                max(word["bbox"][2] for word in words),
-                max(word["bbox"][3] for word in words),
-            ),
-            "words": words,
+            "text": text,
+            "bbox": word["bbox"],
+            "words": [word],
         })
     return blocks
 
@@ -403,5 +438,16 @@ def load_pdf_documents(file_path: str | Path, group_name: str) -> list[Document]
                         "ocr_words",
                     ],
                 ))
+
+    review_path = path.parent.parent / f"{path.parent.name}__{path.stem}.txt"
+    review_text = "\n\n".join(
+        (
+            f"--- Trang {document.metadata['page_number']} "
+            f"| Cột {document.metadata['source_column']} ---\n"
+            f"{document.text}"
+        )
+        for document in documents
+    )
+    review_path.write_text(review_text, encoding="utf-8")
 
     return documents

@@ -21,7 +21,7 @@
 - **Embedding:** Hugging Face model `AITeamVN/Vietnamese_Embedding`
 - **Reranker:** `kiencnt2205/vietnamese-legal-reranker-bge-base`
 - **Frontend:** HTML, CSS và JavaScript thuần
-- **PDF OCR:** PyMuPDF, Tesseract OCR và language data tiếng Việt (`vie`)
+- **PDF OCR:** PyMuPDF và DeepDoc + VietOCR
 
 Các giá trị cấu hình chunking, retrieval và model nằm trong [constants.py](constants.py). LLM được khởi tạo trong [ingestion.py](ingestion.py) và [responsesynthesizer.py](responsesynthesizer.py).
 
@@ -33,6 +33,7 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 ├── ragservice.py            # Indexing, retrieval, generation
 ├── ingestion.py             # Đọc tài liệu, tạo và nạp index
 ├── pdf_ingestion.py         # OCR, tách cột và giữ metadata PDF
+├── requirements-ocr.txt     # Dependency bổ sung cho OCR DeepDoc + VietOCR
 ├── constants.py             # Model và tham số RAG
 ├── postprocessors.py        # Similarity filter và reranker
 ├── responsesynthesizer.py   # Sinh câu trả lời bằng LlamaIndex
@@ -47,7 +48,7 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 - Python 3.10 trở lên
 - LlamaIndex
-- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) và language data tiếng Việt (`vie`)
+- DeepDoc + VietOCR (chỉ cần khi xử lý PDF scan; xem phần cài đặt bên dưới)
 - [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:3b`
 - Embedding model `AITeamVN/Vietnamese_Embedding` (được tải từ Hugging Face khi chạy lần đầu)
 - Vector store của LlamaIndex (`SimpleVectorStore`), lưu index cục bộ trong `storage/`
@@ -58,16 +59,21 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 ## Cài đặt
 
-Mở PowerShell tại thư mục dự án:
+Các bước dưới đây dành cho máy Windows mới. Cài [Git](https://git-scm.com/download/win), [Python 3.10 trở lên](https://www.python.org/downloads/) và [Ollama](https://ollama.com/download) trước. Mở PowerShell tại thư mục muốn đặt project rồi clone:
+
+```powershell
+git clone https://github.com/uncletientrung/Llamaindex-academic-rag-chatbot.git
+Set-Location .\Llamaindex-academic-rag-chatbot
+```
+
+Tạo môi trường Python riêng và cài dependency của project:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
-
-Trên Windows, cài Tesseract OCR và language data **Vietnamese (`vie`)**. Đảm bảo lệnh `tesseract` chạy được trong PowerShell. Ứng dụng chỉ dùng OCR tiếng Việt (`vie`) khi PDF không có text layer hữu ích; PDF có text layer được trích xuất trực tiếp. Trang nhiều cột được sắp xếp theo thứ tự đọc và đưa vào index thành từng cột riêng. Tesseract cung cấp tọa độ riêng cho từng từ OCR để highlight nguồn.
 
 Nếu PowerShell chặn kích hoạt môi trường ảo, có thể chạy lệnh này trong cửa sổ hiện tại rồi kích hoạt lại:
 
@@ -76,19 +82,48 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
+### Cài DeepDoc + VietOCR cho PDF scan
+
+DeepDoc cần PyTorch và các dependency bổ sung. Cài PyTorch CPU trước, sau đó cài danh sách dependency OCR:
+
+```powershell
+python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements-ocr.txt
+```
+
+Clone phiên bản DeepDoc đã thử nghiệm vào thư mục `third_party` (đã được Git bỏ qua) và cấu hình đường dẫn model:
+
+```powershell
+$deepdocPath = Join-Path $PWD "third_party\deepdoc_vietocr"
+New-Item -ItemType Directory -Force (Split-Path $deepdocPath) | Out-Null
+git clone https://github.com/hoaivannguyen/deepdoc_vietocr.git $deepdocPath
+git -C $deepdocPath checkout 8f7906fd4e78cd0324532298e9062b031b4a320c
+[Environment]::SetEnvironmentVariable("DEEPDOC_VIETOCR_PATH", $deepdocPath, "User")
+$env:DEEPDOC_VIETOCR_PATH = $deepdocPath
+```
+
+`DEEPDOC_VIETOCR_PATH` phải trỏ tới thư mục gốc có `module/`, `onnx/` và `vietocr/weight/`. Lệnh trên lưu biến cho các terminal PowerShell mới và đặt biến cho cửa sổ hiện tại. Nếu chuyển project sang thư mục khác, hãy cập nhật biến này. Mã nguồn DeepDoc và model không nằm trong project Git; mỗi máy cần tự clone và tải chúng.
+
+PDF có text layer hữu ích được trích xuất trực tiếp; PDF scan dùng DeepDoc + VietOCR. PDF có nhiều cột được sắp xếp theo thứ tự đọc. Văn bản trích xuất được lưu để kiểm tra trong `data/<tên nhóm>__<tên file>.txt`.
+
 Tải model LLM mà ứng dụng sử dụng:
 
 ```powershell
 ollama pull qwen2.5:3b
 ```
 
-Embedding và reranker được tải từ Hugging Face khi cần; lần chạy đầu tiên có thể mất thêm thời gian và cần kết nối Internet.
+Embedding và reranker được tải từ Hugging Face khi cần; lần chạy đầu tiên có thể mất thêm thời gian và cần kết nối Internet. Trước khi phân phối project hoặc model DeepDoc, hãy kiểm tra điều khoản giấy phép của repository và model.
 
 ## Chạy ứng dụng
 
-### 1. Khởi động backend
+Mỗi lần chạy trên terminal mới, mở PowerShell tại thư mục project, kích hoạt môi trường ảo và nạp lại đường dẫn DeepDoc đã lưu:
 
-Tại thư mục gốc dự án, sau khi kích hoạt môi trường ảo:
+```powershell
+.\.venv\Scripts\Activate.ps1
+$env:DEEPDOC_VIETOCR_PATH = [Environment]::GetEnvironmentVariable("DEEPDOC_VIETOCR_PATH", "User")
+```
+
+Khởi động backend:
 
 ```powershell
 uvicorn main:app --reload
@@ -96,13 +131,11 @@ uvicorn main:app --reload
 
 Backend mặc định chạy tại `http://127.0.0.1:8000`. Có thể mở `http://127.0.0.1:8000/docs` để xem và thử các API.
 
-Khi khởi động, ứng dụng nạp index có sẵn trong `storage/`; nếu chưa có index cho một nhóm tài liệu, ứng dụng sẽ tạo index từ dữ liệu tương ứng trong `data/`. Quá trình này có thể cần nhiều thời gian ở lần chạy đầu.
+Khi khởi động lần đầu, hãy tạo nhóm và chép tài liệu vào `data/<tên nhóm>/` hoặc tải lên bằng giao diện. Ứng dụng sẽ tạo index; quá trình này có thể mất thời gian do OCR scan và tải embedding/reranker.
 
-Index PDF cũ sẽ tự động build lại một lần khi cập nhật pipeline OCR tiếng Việt. Việc OCR tài liệu scan có thể làm lần build này lâu hơn.
+### Khởi động giao diện
 
-### 2. Khởi động giao diện
-
-Giao diện gọi API tại `http://127.0.0.1:8000` và backend hiện cho phép CORS từ cổng `5500`. Có thể mở thư mục `frontend/` bằng tiện ích **Live Server** trong VS Code, sau đó truy cập địa chỉ Live Server, thường là `http://127.0.0.1:5500`.
+Giữ backend đang chạy. Mở thư mục `frontend/` bằng tiện ích **Live Server** trong VS Code, sau đó truy cập địa chỉ Live Server, thường là `http://127.0.0.1:5500`.
 
 Không mở `index.html` trực tiếp bằng `file://`, vì trình duyệt có thể chặn các yêu cầu tới API.
 

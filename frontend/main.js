@@ -45,6 +45,8 @@ const UPLOAD_API_URL = "http://127.0.0.1:8000/upload";
 const DOCUMENTS_API_URL = "http://127.0.0.1:8000/documents";
 const GROUPS_API_URL = "http://127.0.0.1:8000/groups";
 const CONVERSATIONS_API_URL = "http://127.0.0.1:8000/conversations";
+const mainLoadingTasks = new Map();
+let mainLoadingTaskId = 0;
 
 
 // ============================================================
@@ -54,16 +56,43 @@ const CONVERSATIONS_API_URL = "http://127.0.0.1:8000/conversations";
 // Hiển thị loading toàn màn hình
 function showMainLoading(
     title = "Đang tải dữ liệu",
-    message = "Vui lòng chờ trong giây lát..."
+    message = "Vui lòng chờ trong giây lát...",
+    priority = 0
 ) {
-    mainLoadingTitle.textContent = title;
-    mainLoadingMessage.textContent = message;
-    mainLoadingOverlay.style.display = "flex";
+    const taskId = ++mainLoadingTaskId;
+    mainLoadingTasks.set(taskId, { title, message, priority });
+    renderMainLoading();
+    return taskId;
 }
 
-// Ẩn loading toàn màn hình
-function hideMainLoading() {
-    mainLoadingOverlay.style.display = "none";
+function hideMainLoading(taskId) {
+    mainLoadingTasks.delete(taskId);
+    renderMainLoading();
+}
+
+function renderMainLoading() {
+    const activeTask = [...mainLoadingTasks.entries()].reduce(
+        (active, [taskId, task]) => {
+            if (
+                !active ||
+                task.priority > active.priority ||
+                (task.priority === active.priority && taskId > active.taskId)
+            ) {
+                return { ...task, taskId };
+            }
+            return active;
+        },
+        null
+    );
+
+    if (!activeTask) {
+        mainLoadingOverlay.style.display = "none";
+        return;
+    }
+
+    mainLoadingTitle.textContent = activeTask.title;
+    mainLoadingMessage.textContent = activeTask.message;
+    mainLoadingOverlay.style.display = "flex";
 }
 
 // Chống XSS khi hiển thị dữ liệu dạng HTML
@@ -572,9 +601,10 @@ async function handleDocumentGroupClick(event) {
 
         if (!ok) return;
 
-        showMainLoading(
+        const loadingTaskId = showMainLoading(
             "Đang xóa tài liệu và cập nhật lại RAG",
-            `Đang xóa ${file.name}`
+            `Đang xóa ${file.name}`,
+            2
         );
 
         try {
@@ -610,7 +640,7 @@ async function handleDocumentGroupClick(event) {
             alert("Lỗi: " + error.message);
 
         } finally {
-            hideMainLoading();
+            hideMainLoading(loadingTaskId);
 
             if (button.isConnected) {
                 button.disabled = false;
@@ -627,9 +657,10 @@ async function handleDocumentGroupClick(event) {
 
         if (!ok) return;
 
-        showMainLoading(
+        const loadingTaskId = showMainLoading(
             "Đang xóa nhóm tài liệu và cập nhật lại RAG",
-            `Đang xóa thư mục ${group.name}`
+            `Đang xóa thư mục ${group.name}`,
+            2
         );
 
         try {
@@ -658,7 +689,7 @@ async function handleDocumentGroupClick(event) {
             alert("Lỗi: " + error.message);
 
         } finally {
-            hideMainLoading();
+            hideMainLoading(loadingTaskId);
 
             if (button.isConnected) {
                 button.disabled = false;
@@ -684,9 +715,10 @@ async function handleDocumentUpload(event) {
     const allowedExtensions = ["pdf", "docx", "txt"];
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-    showMainLoading(
+    const loadingTaskId = showMainLoading(
         "Đang upload tài liệu và cập nhật lại RAG",
-        `Đang chuẩn bị ${files.length} tệp...`
+        `Đang chuẩn bị ${files.length} tệp...`,
+        2
     );
 
     // Upload từng file
@@ -740,7 +772,7 @@ async function handleDocumentUpload(event) {
     // Xóa giá trị input để có thể chọn lại cùng file
     input.value = "";
 
-    hideMainLoading();
+    hideMainLoading(loadingTaskId);
 
     // Render lại giao diện
     await loadDocumentGroups();
@@ -882,10 +914,12 @@ function renderHistory() {
 
 // Tải toàn bộ tin nhắn của một cuộc trò chuyện
 async function loadConversation_Messages(conversationId) {
+    let loadingTaskId;
     try {
-        showMainLoading(
+        loadingTaskId = showMainLoading(
             "Đang tải cuộc trò chuyện",
-            "Đang tải lại lịch sử tin nhắn..."
+            "Đang tải lại lịch sử tin nhắn...",
+            1
         );
 
         const response = await fetch(
@@ -926,7 +960,7 @@ async function loadConversation_Messages(conversationId) {
         );
 
     } finally {
-        hideMainLoading();
+        hideMainLoading(loadingTaskId);
         questionInput.focus();
     }
 }
@@ -1430,6 +1464,10 @@ async function openSourcePdf(source) {
             textLayer.style.setProperty("--scale-factor", scale);
             pageContainer.appendChild(textLayer);
 
+            const evidenceLayer = document.createElement("div");
+            evidenceLayer.className = "ocr-evidence-layer";
+            pageContainer.appendChild(evidenceLayer);
+
             evidencePage.appendChild(pageContainer);
             pagesContainer.appendChild(evidencePage);
 
@@ -1448,7 +1486,7 @@ async function openSourcePdf(source) {
             }).promise;
 
             const highlightedFromOcr = renderEvidenceBboxes(
-                textLayer,
+                evidenceLayer,
                 source.evidence_bboxes || []
             );
             if (highlightedFromOcr || highlightSourceText(textLayer, source.text)) {

@@ -4,7 +4,7 @@ ALL_GROUPS = "all" # value của khi chọn tất cả nhóm
 
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 200
-PDF_OCR_VERSION = "tesseract-vie-1"
+PDF_OCR_VERSION = "deepdoc-vietocr-1"
 
 SIMILARITY_TOP_K = 10
 

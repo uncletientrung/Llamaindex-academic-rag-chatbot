@@ -1,6 +1,7 @@
 # Virtual environment
 venv/
 .venv/
+third_party/deepdoc_vietocr/
 
 # Python cache
 __pycache__/
