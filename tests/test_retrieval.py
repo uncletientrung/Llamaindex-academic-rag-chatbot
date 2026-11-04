@@ -20,8 +20,6 @@ from llama_index.core.extractors import (
 )
 from llama_index.extractors.entity import EntityExtractor
 
-from src.retrieval.retriever import create_retriever
-from src.retrieval.reranker import create_reranker
 from ingestion import DocumentIngestionPipeline
 
 
