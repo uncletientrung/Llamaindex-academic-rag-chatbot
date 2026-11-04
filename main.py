@@ -165,7 +165,7 @@ def create_group(request: CreateGroupRequest): # Tạo thư mục
     }
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), group: str = Form(...)):
+def upload_file(file: UploadFile = File(...), group: str = Form(...)):
     group_dir = DATA_DIR / group  # Tạo thư mục theo nhóm tài liệu
     group_dir.mkdir(parents=True, exist_ok=True)
     file_path = group_dir / file.filename # Đường dẫn file

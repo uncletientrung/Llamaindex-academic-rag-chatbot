@@ -83,8 +83,15 @@ class DocumentIngestionPipeline:
 
     def get_nodes(self, documents, folder_name: str): # Hàm lấy các nodes đã extractor và embed
         split = SentenceSplitter(chunk_size= DEFAULT_CHUNK_SIZE, chunk_overlap=DEFAULT_CHUNK_OVERLAP)
+        title_llm = Ollama(
+            model=Settings.llm.metadata.model_name,
+            base_url=Settings.llm.base_url,
+            temperature=Settings.llm.temperature,
+            context_window=Settings.llm.context_window,
+            request_timeout=Settings.llm.request_timeout,
+        )
         titleEx = TitleExtractor(
-            llm=Settings.llm,
+            llm=title_llm,
             nodes=5,
             node_template=TITLE_NODE_PROMT,
             combine_template=TITLE_COMBINE_PROMT,
