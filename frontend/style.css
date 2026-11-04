@@ -758,6 +758,11 @@ button {
     overflow-wrap: anywhere;
 }
 
+.history-time {
+    color: #ADB5BD;
+    font-size: 0.72rem;
+}
+
 .history-sub {
     color: #ADB5BD;
     font-size: 0.74rem;

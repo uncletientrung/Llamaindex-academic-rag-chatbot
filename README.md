@@ -112,7 +112,7 @@ Không mở `index.html` trực tiếp bằng `file://`, vì trình duyệt có 
 2. Vào **Quản lý tài liệu** để tạo nhóm và tải lên PDF, DOCX hoặc TXT. Có thể thêm tài liệu vào thư mục `data/<tên nhóm>/` trước khi khởi động backend.
 3. Chọn một nhóm cụ thể hoặc **Tất cả tài liệu** làm phạm vi tìm kiếm.
 4. Nhập câu hỏi ở trang **Hỏi đáp RAG**. Câu trả lời được truyền về theo luồng.
-5. Các cuộc trò chuyện được lưu trong `storage/chat_store.json`.
+5. Các cuộc trò chuyện được lưu trong `storage/chat_store.json`; thời gian tạo được lưu trong `storage/chat_store_metadata.json` và hiển thị dưới tiêu đề trong lịch sử chat.
 
 Mỗi nhóm có index riêng trong `storage/<tên nhóm>/`. Khi tải lên hoặc xóa tài liệu qua giao diện, backend cập nhật lại index của nhóm đó. Không xóa hoặc chỉnh sửa thủ công nội dung trong `storage/` khi ứng dụng đang chạy.
 

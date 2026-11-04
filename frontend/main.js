@@ -838,6 +838,7 @@ function renderHistory() {
 
                 <div class="history-text">
                     <div class="history-title"></div>
+                    <div class="history-time"></div>
                 </div>
 
                 <button
@@ -854,6 +855,26 @@ function renderHistory() {
             title.length > 25
                 ? title.substring(0, 25) + "..."
                 : title;
+
+        const createdAt = conversation.created_at
+            ? new Date(conversation.created_at)
+            : null;
+        const timeLabel = createdAt && !Number.isNaN(createdAt.getTime())
+            ? createdAt.toLocaleString("vi-VN", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hourCycle: "h23",
+            })
+            : "";
+        const timeElement = item.querySelector(".history-time");
+        if (timeLabel) {
+            timeElement.textContent = `${timeLabel}`;
+        } else {
+            timeElement.remove();
+        }
 
         historyList.appendChild(item);
     });
