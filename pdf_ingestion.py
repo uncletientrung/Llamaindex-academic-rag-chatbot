@@ -7,12 +7,31 @@ from pathlib import Path
 import re
 import sys
 import threading
+import shutil
 import unicodedata
 from typing import Any
 
 import pymupdf
 from llama_index.core import Document
 from PIL import Image
+
+def _configure_tesseract() -> None:
+    # IDE-launched servers can inherit an older PATH even after Tesseract is
+    # added to the Windows user environment. Check its common install path too.
+    if shutil.which("tesseract"):
+        return
+
+    for executable in (
+        Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+        Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+    ):
+        if executable.is_file():
+            pytesseract.pytesseract.tesseract_cmd = str(executable)
+            return
+
+
+_configure_tesseract()
+
 
 OCR_MIN_ALPHANUMERIC_CHARS = 40 # nếu có ít hơn 40 ký tự chữ hoặc số thì trang đó cần OCR.
 OCR_RENDER_SCALE = 3 # render PDF với hệ số phóng đại 3 lần

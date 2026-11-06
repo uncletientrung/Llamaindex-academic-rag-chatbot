@@ -17,7 +17,7 @@
 
 - **Backend:** Python, FastAPI, Uvicorn
 - **RAG:** LlamaIndex; vector index lưu cục bộ
-- **LLM:** Ollama, mặc định dùng `qwen2.5:3b`
+- **LLM:** Ollama, mặc định dùng `qwen2.5:7b`
 - **Embedding:** Hugging Face model `AITeamVN/Vietnamese_Embedding`
 - **Reranker:** `kiencnt2205/vietnamese-legal-reranker-bge-base`
 - **Frontend:** HTML, CSS và JavaScript thuần
@@ -48,8 +48,8 @@ Các giá trị cấu hình chunking, retrieval và model nằm trong [constants
 
 - Python 3.10 trở lên
 - LlamaIndex
-- DeepDoc + VietOCR (chỉ cần khi xử lý PDF scan; xem phần cài đặt bên dưới)
-- [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:3b`
+- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) và language data tiếng Việt (`vie`)
+- [Ollama](https://ollama.com/) để chạy LLM cục bộ; mặc định dùng model `qwen2.5:7b`
 - Embedding model `AITeamVN/Vietnamese_Embedding` (được tải từ Hugging Face khi chạy lần đầu)
 - Vector store của LlamaIndex (`SimpleVectorStore`), lưu index cục bộ trong `storage/`
 - FastAPI và Uvicorn cho backend; giao diện hiện tại dùng HTML, CSS và JavaScript
@@ -136,7 +136,7 @@ Thay đường dẫn mẫu trong `$env:INPUT_PDF` và `$env:OUTPUT_DIR` bằng v
 Tải model LLM mà ứng dụng sử dụng:
 
 ```powershell
-ollama pull qwen2.5:3b
+ollama pull qwen2.5:7b
 ```
 
 Embedding và reranker được tải từ Hugging Face khi cần; lần chạy đầu tiên có thể mất thêm thời gian và cần kết nối Internet. Trước khi phân phối project hoặc model DeepDoc, hãy kiểm tra điều khoản giấy phép của repository và model.
@@ -203,7 +203,7 @@ Nếu chưa cài pytest trong môi trường hiện tại, cài bằng `python -
 
 ## Lưu ý
 
-- LLM cần Ollama đang chạy và model `qwen2.5:3b` có sẵn cục bộ.
+- LLM cần Ollama đang chạy và model `qwen2.5:7b` có sẵn cục bộ.
 - Embedding model và reranker có thể cần tải về ở lần chạy đầu.
 - Dữ liệu, index và lịch sử chat được lưu cục bộ trong `data/` và `storage/`; hãy sao lưu nếu cần giữ lại.
 - Đây là đồ án thử nghiệm, không thay thế việc kiểm tra văn bản gốc hoặc tư vấn chuyên môn.
