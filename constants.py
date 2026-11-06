@@ -7,11 +7,8 @@ DEFAULT_CHUNK_OVERLAP = 200
 PDF_OCR_VERSION = "deepdoc-vietocr-1"
 
 SIMILARITY_TOP_K = 10
-
 SIMILARITY_CUTOFF = 0.25
-
 RERANK_TOP_N = 3
-
 RERANKER_MODEL = "kiencnt2205/vietnamese-legal-reranker-bge-base"
 
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"

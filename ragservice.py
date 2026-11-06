@@ -126,7 +126,7 @@ class RAGService:
             "sources": self.extract_sources(nodes),
         }
 
-        recent_history = (history or [])[-6:] # Chỉ giữ hai lượt gần nhất để giảm nhiễu
+        recent_history = (history or [])[-10:] # Chỉ giữ hai lượt gần nhất để giảm nhiễu
         history_text = ""
         for message in recent_history:
             role = 'Người dùng' if message.role.value == 'user' else 'Trợ lý'

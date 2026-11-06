@@ -1,21 +1,21 @@
-from fastapi import FastAPI, HTTPException
 import logging
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
-from pathlib import Path
-from pydantic import BaseModel
-from typing import Optional
-import shutil
 import json
-from fastapi.responses import FileResponse
-from ragservice import RAGService
-from chathistory import ChatHistoryStore
+import shutil
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
+
 from constants import (
     ALL_GROUPS,
     MAX_FILE_SIZE,
     SUPPORTED_EXTENSIONS,
 )
+from chathistory import ChatHistoryStore
+from ragservice import RAGService
 
 app = FastAPI(title="Academic RAG API")
 DATA_DIR = Path("data").resolve()
@@ -54,12 +54,15 @@ class CreateGroupRequest(BaseModel):
     name: str
 
 
+# Kiểm tra API
 @app.get("/")
 def home():
     return {"message": "Academic RAG API is running"}
 
+
+# Liệt kê nhóm tài liệu và các tệp
 @app.get("/documents")
-def get_documents(): # Đọc danh sách nhóm từ thư mục data
+def get_documents():  # Đọc danh sách nhóm từ thư mục data
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     groups = []
     for group_dir in sorted(DATA_DIR.iterdir()):
@@ -86,57 +89,7 @@ def get_documents(): # Đọc danh sách nhóm từ thư mục data
 
     return {"groups": groups}
 
-@app.post("/chat", response_model=ChatResponse) # response_model=ChatResponse: Khai báo cấu trúc phản hồi mong muốn.
-def chat(request: ChatRequest):
-    question = request.question.strip()
-    print(question)
-    group = request.group.strip()
-
-    if not question:
-        raise HTTPException(
-            status_code=400,
-            detail="Vui lòng nhập câu hỏi."
-        )
-    
-    conversation_id = request.conversation_id # Lấy lịch sử cuộc hội thoại hoặc tạo uuid mới
-    if conversation_id is None:
-        conversation_id = chat_storage.create_conversation()
-    else:
-        conversations = chat_storage.get_conversations()
-        conversation_ids = set()
-        for conversation in conversations:
-            conversation_ids.add(conversation["conversation_id"])
-
-        if conversation_id not in conversation_ids:
-            raise HTTPException(
-                status_code=404,
-                detail="Không tìm thấy cuộc trò chuyện.",
-            )
-    
-    history = chat_storage.get_messages(conversation_id)
-    chat_storage.add_message(conversation_id,"user",question) # Lưu câu hỏi vào chatStorage 
-
-
-    def generate_response(): # Hàm trong hàm
-            full_response = ""
-            for event in rag_engine.ask_stream(question,group, history):
-                if event["type"] == "token":
-                    full_response += event["text"]
-
-                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-                
-            if full_response:
-                chat_storage.add_message(conversation_id, "assistant",full_response)
-    return StreamingResponse(
-        generate_response(),
-        media_type="text/event-stream; charset=utf-8",
-        headers={   
-            "X-Conversation-ID": conversation_id,
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-        }
-    )
-
+# Tạo nhóm tài liệu và quản lý các tệp
 @app.post("/groups")
 def create_group(request: CreateGroupRequest): # Tạo thư mục
     name = request.name.strip()
@@ -286,6 +239,63 @@ def delete_group(name: str): # Xóa thư mục
     }
 
 
+# Gửi câu hỏi và stream câu trả lời
+@app.post("/chat", response_model=ChatResponse) # response_model=ChatResponse: Khai báo cấu trúc phản hồi mong muốn.
+def chat(request: ChatRequest):
+    question = request.question.strip()
+    print(f"Câu hỏi: {question}")
+    group = request.group.strip()
+
+    if not question:
+        raise HTTPException(
+            status_code=400,
+            detail="Vui lòng nhập câu hỏi."
+        )
+
+    # Tạo cuộc trò chuyện mới hoặc xác nhận cuộc trò chuyện hiện tại
+    conversation_id = request.conversation_id
+    if conversation_id is None:
+        conversation_id = chat_storage.create_conversation()
+    else:
+        conversations = chat_storage.get_conversations()
+        conversation_ids = set()
+        for conversation in conversations:
+            conversation_ids.add(conversation["conversation_id"])
+
+        if conversation_id not in conversation_ids:
+            raise HTTPException(
+                status_code=404,
+                detail="Không tìm thấy cuộc trò chuyện.",
+            )
+
+    # Đọc lịch sử và lưu câu hỏi mới
+    history = chat_storage.get_messages(conversation_id)
+    chat_storage.add_message(conversation_id, "user", question)
+
+    # Gửi các sự kiện từ RAG dưới dạng Server-Sent Events
+    def generate_response(): # Hàm trong hàm
+            full_response = ""
+            for event in rag_engine.ask_stream(question,group, history):
+                if event["type"] == "token":
+                    full_response += event["text"]
+
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+            if full_response:
+                chat_storage.add_message(conversation_id, "assistant",full_response)
+
+    return StreamingResponse(
+        generate_response(),
+        media_type="text/event-stream; charset=utf-8",
+        headers={
+            "X-Conversation-ID": conversation_id,
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
+# Liệt kê, đọc và xóa lịch sử trò chuyện
 @app.get("/conversations")
 def list_conversations():
     return {
@@ -336,6 +346,7 @@ def delete_conversation(conversation_id: str):
     return {"message": "Đã xóa cuộc trò chuyện."}
 
 
+# Trả PDF cho giao diện xem tài liệu và highlight nguồn
 @app.get("/documents/pdf")
 def get_pdf(group: str, filename: str):
     if (

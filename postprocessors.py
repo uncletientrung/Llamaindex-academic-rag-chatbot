@@ -4,8 +4,8 @@ from llama_index.core.postprocessor.types import BaseNodePostprocessor
 from llama_index.core.schema import NodeWithScore, QueryBundle
 
 class NodePostprocessorFactory:
-    def __init__(self, similarity_cutoff: float = SIMILARITY_CUTOFF):
-        self.similarity_cutoff = similarity_cutoff
+    def __init__(self):
+        self.similarity_cutoff = SIMILARITY_CUTOFF
         self.rerank_top_n = RERANK_TOP_N # RERANK_TOP_N đang để là 3
 
         self.reranker = SentenceTransformerRerank(

@@ -1140,10 +1140,7 @@ async function sendQuestion() {
 
         let isFirstChunk = true;
         let streamBuffer = "";
-        let textBuffer = "";
         let answerSources = [];
-        const STREAM_DELAY = 10; // Thời gian nghỉ giữa các lần hiển thị
-        const CHARS_PER_STEP = 5; // Số ký tự hiển thị mỗi lần
 
         async function processEvent(block) {
             console.log(block);
@@ -1173,15 +1170,7 @@ async function sendQuestion() {
                 isFirstChunk = false;
             }
 
-            textBuffer += event.text || "";
-
-            while (textBuffer.length > 0) {
-                const chunk = textBuffer.slice(0, CHARS_PER_STEP);
-                textBuffer = textBuffer.slice(CHARS_PER_STEP);
-                messageContent.textContent += chunk;
-
-                await new Promise(resolve => setTimeout(resolve, STREAM_DELAY));
-            }
+            messageContent.textContent += event.text || "";
         }
 
         while (true) {
@@ -1227,79 +1216,7 @@ async function sendQuestion() {
 
 
 // ============================================================
-// 8. ĐĂNG KÝ TẤT CẢ SỰ KIỆN ADD EVENT LISTENER
-// ============================================================
-
-// Sự kiện nhập câu hỏi và bật/tắt nút gửi
-questionInput.addEventListener("input", () => {
-    askBtn.disabled = !questionInput.value.trim();
-});
-
-// Sự kiện chuyển đổi trang Chat / Documents
-chatNavBtn.addEventListener("click", event => {
-    event.preventDefault();
-    switchPage("chat");
-});
-
-documentsNavBtn.addEventListener("click", event => {
-    event.preventDefault();
-    switchPage("documents");
-});
-
-// Sự kiện tạo nhóm tài liệu
-createGroupBtn.addEventListener("click", createDocumentGroup);
-
-// Sự kiện tìm kiếm nhóm tài liệu
-searchInput.addEventListener("input", renderDocumentGroups);
-
-// Cập nhật phạm vi tìm kiếm khi đổi nhóm tài liệu
-documentGroupSelect.addEventListener("change", updateChatSubtitle);
-
-// Sự kiện thu gọn nhóm, xóa nhóm và xóa tệp
-groupsList.addEventListener("click", handleDocumentGroupClick);
-
-// Sự kiện upload tài liệu
-groupsList.addEventListener("change", handleDocumentUpload);
-
-// Sự kiện bắt đầu cuộc trò chuyện mới
-newChatBtn.addEventListener("click", startNewChat);
-
-// Sự kiện gửi câu hỏi
-askBtn.addEventListener("click", sendQuestion);
-
-// Nhấn Enter để gửi câu hỏi
-questionInput.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-        event.preventDefault();
-
-        if (!askBtn.disabled) {
-            sendQuestion();
-        }
-    }
-});
-
-// Xử lý click vào lịch sử chat
-historyList.addEventListener("click", handleHistoryClick);
-
-
-// ============================================================
-// 9. KHỞI TẠO VÀ TẢI DỮ LIỆU BAN ĐẦU
-// ============================================================
-
-// Khởi tạo trang mặc định
-const initialPage =
-    documentsPage.style.display === "block" ? "documents" : "chat";
-
-switchPage(initialPage);
-
-// Tải danh sách nhóm tài liệu ban đầu
-loadDocumentGroups();
-
-// Tải lịch sử cuộc trò chuyện ban đầu
-loadConversations();
-
-// ============================================================
-// 10. CÁC HÀM XỬ LÝ HIGHLIGHT
+// 8. HIỂN THỊ NGUỒN VÀ XỬ LÝ HIGHLIGHT
 // ============================================================
 
 
@@ -1683,3 +1600,76 @@ function highlightSourceText(textLayer, sourceText) {
 
     return highlightedSpans.size > 0;
 }
+
+
+// ============================================================
+// 9. ĐĂNG KÝ SỰ KIỆN
+// ============================================================
+
+// Sự kiện nhập câu hỏi và bật/tắt nút gửi
+questionInput.addEventListener("input", () => {
+    askBtn.disabled = !questionInput.value.trim();
+});
+
+// Sự kiện chuyển đổi trang Chat / Documents
+chatNavBtn.addEventListener("click", event => {
+    event.preventDefault();
+    switchPage("chat");
+});
+
+documentsNavBtn.addEventListener("click", event => {
+    event.preventDefault();
+    switchPage("documents");
+});
+
+// Sự kiện tạo nhóm tài liệu
+createGroupBtn.addEventListener("click", createDocumentGroup);
+
+// Sự kiện tìm kiếm nhóm tài liệu
+searchInput.addEventListener("input", renderDocumentGroups);
+
+// Cập nhật phạm vi tìm kiếm khi đổi nhóm tài liệu
+documentGroupSelect.addEventListener("change", updateChatSubtitle);
+
+// Sự kiện thu gọn nhóm, xóa nhóm và xóa tệp
+groupsList.addEventListener("click", handleDocumentGroupClick);
+
+// Sự kiện upload tài liệu
+groupsList.addEventListener("change", handleDocumentUpload);
+
+// Sự kiện bắt đầu cuộc trò chuyện mới
+newChatBtn.addEventListener("click", startNewChat);
+
+// Sự kiện gửi câu hỏi
+askBtn.addEventListener("click", sendQuestion);
+
+// Nhấn Enter để gửi câu hỏi
+questionInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+
+        if (!askBtn.disabled) {
+            sendQuestion();
+        }
+    }
+});
+
+// Xử lý click vào lịch sử chat
+historyList.addEventListener("click", handleHistoryClick);
+
+
+// ============================================================
+// 10. KHỞI TẠO VÀ TẢI DỮ LIỆU BAN ĐẦU
+// ============================================================
+
+// Khởi tạo trang mặc định
+const initialPage =
+    documentsPage.style.display === "block" ? "documents" : "chat";
+
+switchPage(initialPage);
+
+// Tải danh sách nhóm tài liệu ban đầu
+loadDocumentGroups();
+
+// Tải lịch sử cuộc trò chuyện ban đầu
+loadConversations();
