@@ -57,8 +57,7 @@ for folder in ig.get_subfolders():
         print("document_title:", node.metadata.get("document_title"))
         print("-" * 50)
 
-
-
+documents = SimpleDirectoryReader("./data", recursive=True, required_exts=[".pdf", ".txt"]).load_data()
 
 # =========================
 # 3. Đọc PDF
@@ -177,7 +176,7 @@ for folder in ig.get_subfolders():
 
 #     if question.lower() in ["exit", "quit"]:
 #         break
-
+ 
 #     response = query_engine.query(question)
 
 #     print("\nTrả lời:")

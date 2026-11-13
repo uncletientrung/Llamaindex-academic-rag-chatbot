@@ -37,7 +37,7 @@ class DocumentIngestionPipeline:
         # =========================
         # 1. Cấu hình
         # =========================
-        Settings.llm = Ollama(model="qwen2.5:7b",request_timeout=120.0, temperature=0.7)
+        Settings.llm = Ollama(model="qwen2.5:3b",request_timeout=120.0, temperature=0.7)
         Settings.embed_model = HuggingFaceEmbedding(model_name=EMBEDDING_MODEL)
 
         self.data_dir = Path(data_dir).resolve()
@@ -96,18 +96,8 @@ class DocumentIngestionPipeline:
             node_template=TITLE_NODE_PROMT,
             combine_template=TITLE_COMBINE_PROMT,
         )
-        keywordEx = KeywordExtractor(
-            llm= Settings.llm,
-            keywords=5,
-            prompt_template= KEYWORD_PROMT
-        )
-
         transform = [ split,
                       titleEx,
-                    #  keywordEx,
-            # EntityExtractor(prediction_threshold=0.5),
-            # SummaryExtractor(summaries=["prev", "self"]),
-            # QuestionsAnsweredExtractor(questions=3),
             Settings.embed_model
         ]
         ingestion = IngestionPipeline(transformations=transform)

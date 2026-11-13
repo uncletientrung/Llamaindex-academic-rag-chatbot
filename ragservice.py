@@ -4,7 +4,7 @@ from llama_index.core.schema import MetadataMode, QueryBundle
 from ingestion import DocumentIngestionPipeline
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.tools import QueryEngineTool
-from llama_index.core.selectors import LLMSingleSelector
+from llama_index.core.selectors import LLMMultiSelector, LLMSingleSelector 
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import RouterRetriever
 from llama_index.core.tools import RetrieverTool
@@ -126,7 +126,7 @@ class RAGService:
             "sources": self.extract_sources(nodes),
         }
 
-        recent_history = (history or [])[-10:] # Chỉ giữ hai lượt gần nhất để giảm nhiễu
+        recent_history = (history or [])[-10:] # Chỉ giữ 5 lượt gần nhất để giảm nhiễu
         history_text = ""
         for message in recent_history:
             role = 'Người dùng' if message.role.value == 'user' else 'Trợ lý'
